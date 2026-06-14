@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────
+# Root .gitignore — Cafe Yo (Root Level)
+# ─────────────────────────────────────────────
+
+# Visual Studio
+.vs/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln.ide/
+
+# Build Artifacts
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+[Dd]eploy/
+**/publish/
+
+# Logs
+*.log
+run_*.err.log
+run_*.out.log
+verify_*.log
+run_smoke_*.log
+logs/
+log/
+
+# OS Files
+Thumbs.db
+*.DS_Store
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.bak
+*~
+
+# Secrets & Config
+.env
+.env.*.local
+*.secret.*
+secrets.json
+user.config
+
+# Node
+node_modules/
+jspm_packages/
