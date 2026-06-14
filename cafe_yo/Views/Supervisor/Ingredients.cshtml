@@ -1,0 +1,33 @@
+@{ Layout = "~/Views/Shared/_LayoutAdmin.cshtml"; ViewData["Title"] = "Bahan & Bumbu"; }
+<style>
+*{box-sizing:border-box}.sv{background:#0b1220;color:#f5f7fb;border:1px solid #1f3351;border-radius:16px;padding:1rem}.top{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+.btn{background:#f6d44d;color:#111;border:0;border-radius:10px;padding:.55rem .85rem;font-weight:700}.btn2{background:#13233a;color:#f5f7fb;border:1px solid #2c466d;border-radius:10px;padding:.5rem .75rem}
+.row{display:grid;grid-template-columns:2fr 1fr;gap:.8rem;margin-top:.8rem}.card{background:#0f1a2d;border:1px solid #233a5d;border-radius:12px;padding:.75rem;overflow:hidden}
+.tbl{width:100%;border-collapse:collapse}.tbl th,.tbl td{padding:.5rem;border-bottom:1px solid #223754;color:#eaf1ff}.tbl th{color:#bcd0ee;text-align:left}.muted{color:#b7c8e4;font-size:.84rem}
+input,textarea{width:100%;background:#091525;color:#f3f7ff;border:1px solid #2f4b74;border-radius:10px;padding:.5rem}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.badge{padding:.08rem .45rem;border-radius:999px;font-size:.72rem}.ok{background:#1e7a48}.low{background:#946a21}.out{background:#8a2a3a}.act{display:flex;gap:.35rem;flex-wrap:wrap}
+@@media(max-width:960px){.row{grid-template-columns:1fr}}
+</style>
+<section class="sv">
+<div class="top"><h1 style="margin:0">Manajemen Bahan & Bumbu</h1><div><button class="btn2" onclick="location.href='/Supervisor'">Kembali</button> <button class="btn" id="toggleForm">Tambah Bahan</button></div></div>
+<div class="row">
+ <div class="card" style="overflow:auto"><table class="tbl"><thead><tr><th>Nama</th><th>Stok</th><th>Min</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
+ <div class="card" id="formWrap" style="display:none">
+  <h3 id="formTitle" style="margin:.1rem 0 .5rem">Tambah Bahan</h3><input type="hidden" id="id" value="0" />
+  <input id="name" placeholder="Nama bahan"><input id="unit" placeholder="Satuan" style="margin-top:.45rem"><div class="grid2" style="margin-top:.45rem"><input id="qty" type="number" step="0.001" placeholder="Stok"><input id="min" type="number" step="0.001" placeholder="Min"></div>
+  <input id="type" placeholder="Tipe" style="margin-top:.45rem"><textarea id="desc" rows="2" placeholder="Catatan" style="margin-top:.45rem"></textarea>
+  <div class="act" style="margin-top:.55rem"><button class="btn" id="saveBtn">Simpan</button><button class="btn2" id="resetBtn">Reset</button></div>
+ </div>
+</div>
+</section>
+@section Scripts{<script>
+document.addEventListener('DOMContentLoaded',()=>{const g=id=>document.getElementById(id),tb=g('tbody');let rows=[];const esc=s=>String(s??'').replaceAll('<','&lt;');const cls=s=>s==='Habis'?'out':(s==='Stok Menipis'?'low':'ok');
+const reset=()=>{g('id').value='0';g('formTitle').textContent='Tambah Bahan';['name','unit','qty','min','type','desc'].forEach(x=>g(x).value='');g('formWrap').style.display='none';};
+window.editItem=id=>{const x=rows.find(r=>r.stockItemId===id);if(!x)return;g('formWrap').style.display='block';g('formTitle').textContent='Edit Bahan #'+id;g('id').value=id;g('name').value=x.name||'';g('unit').value=x.unit||'';g('qty').value=x.quantity||0;g('min').value=x.minQuantity||0;g('type').value=x.type||'';g('desc').value=x.description||'';};
+window.adjust=async(id,mode)=>{const v=parseFloat(prompt(mode==='add'?'Tambah stok':'Kurangi stok','1')||'0');if(v<=0)return;const r=await fetch('/api/supervisor/ingredients/'+id+'/adjust',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:v,mode})});if(!r.ok){alert('Gagal update stok');return;}load();};
+window.toggleActive=async(id,isActive)=>{const r=await fetch('/api/supervisor/ingredients/'+id+'/set-active',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({isActive:!isActive})});if(!r.ok){alert('Gagal ubah status');return;}load();};
+async function load(){const r=await fetch('/api/supervisor/ingredients/all',{cache:'no-store'});if(!r.ok)return;const d=await r.json();rows=Array.isArray(d?.ingredients)?d.ingredients:[];tb.innerHTML=rows.map(x=>`<tr><td><strong>${esc(x.name)}</strong><div class='muted'>${esc(x.unit)} ${x.isActive?'':'(nonaktif)'}</div></td><td>${x.quantity}</td><td>${x.minQuantity}</td><td><span class='badge ${cls(x.status)}'>${x.status}</span></td><td><div class='act'><button class='btn2' onclick='editItem(${x.stockItemId})'>Edit</button><button class='btn2' onclick="adjust(${x.stockItemId},'add')">+Stok</button><button class='btn2' onclick="adjust(${x.stockItemId},'subtract')">-Stok</button><button class='btn2' onclick='toggleActive(${x.stockItemId},${x.isActive})'>${x.isActive?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>';}
+g('toggleForm').onclick=()=>{g('formWrap').style.display=g('formWrap').style.display==='none'?'block':'none';};
+g('saveBtn').onclick=async()=>{const id=parseInt(g('id').value||'0');const payload={name:g('name').value,unit:g('unit').value,quantity:parseFloat(g('qty').value||'0'),minQuantity:parseFloat(g('min').value||'0'),type:g('type').value,description:g('desc').value,isActive:true};const r=await fetch(id>0?('/api/supervisor/ingredients/'+id):'/api/supervisor/ingredients',{method:id>0?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok){alert('Gagal simpan');return;}reset();load();};
+g('resetBtn').onclick=reset;load();setInterval(load,10000);});
+</script>}

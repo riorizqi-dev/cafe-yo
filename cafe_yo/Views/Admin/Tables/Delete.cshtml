@@ -1,0 +1,25 @@
+﻿@model cafe_yo.Models.CafeTable
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Delete Table";
+}
+
+<h1 class="h4 mb-3">Delete Table</h1>
+
+<div class="alert alert-warning">Are you sure you want to delete this table?</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Table Number</dt>
+    <dd class="col-sm-9">@Model.TableNumber</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Status) ? Model.Status : "-")</dd>
+</dl>
+
+<form method="post" action="/Admin/Tables/Delete/@Model.TableId">
+    @Html.AntiForgeryToken()
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/Admin/Tables">Batal</a>
+        <button class="btn btn-danger" type="submit">Delete</button>
+    </div>
+</form>

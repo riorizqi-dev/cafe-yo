@@ -1,0 +1,22 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Pesanan Langsung";
+}
+<style>
+.sv{background:#0c131b;color:#e9f0f7;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1rem}
+.sv h1{font-size:1.35rem;margin:0 0 .75rem}.sv a{color:#9cc9ff}
+.w{max-height:70vh;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:12px}
+.t{width:100%;border-collapse:separate;border-spacing:0}.t th,.t td{padding:.7rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.t th{position:sticky;top:0;background:#172331;font-size:.75rem;text-transform:uppercase;color:#bacee1}
+.t tr:hover{background:rgba(255,255,255,.03)}
+.b{border-radius:999px;padding:.15rem .5rem;font-size:.74rem;display:inline-block}
+</style>
+<section class="sv">
+<h1>Pantauan Pesanan Langsung</h1><p><a href="/Supervisor"><- Kembali ke Hub</a></p>
+<div class="w"><table class="t"><thead><tr><th>No Order</th><th>Meja</th><th>Status</th><th>Pembayaran</th><th>Item</th><th>Kasir</th><th>Koki</th><th>Timeline</th></tr></thead><tbody id="ordersBody"><tr><td colspan="8">Memuat...</td></tr></tbody></table></div>
+</section>
+@section Scripts{<script>
+document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('ordersBody');const f=(x)=>x?new Date(x).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';const s=(x)=>{const k=(x||'').toLowerCase();if(k.includes('batal'))return '<span class="b" style="background:#5b2c34">Dibatalkan</span>';if(k.includes('selesai'))return '<span class="b" style="background:#1f5137">Selesai</span>';if(k.includes('siap'))return '<span class="b" style="background:#1f4851">Siap</span>';if(k.includes('proses'))return '<span class="b" style="background:#5a4a1f">Diproses</span>';return '<span class="b" style="background:#334153">Menunggu</span>';};
+const e=(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const run=async()=>{const r=await fetch('/api/supervisor/orders',{cache:'no-store'});if(!r.ok)return;const d=await r.json();const rows=Array.isArray(d?.orders)?d.orders:[];if(!rows.length){b.innerHTML='<tr><td colspan="8">Belum ada order.</td></tr>';return;}b.innerHTML=rows.slice(0,100).map(o=>`<tr><td>${e(o.orderNumber||('#'+o.orderId))}</td><td>${e(o.tableNumber??'-')}</td><td>${s(o.status)}</td><td>${e(o.paymentMethod||'-')}<br/><small>${e(o.paymentStatus||'-')}</small></td><td>${(o.items||[]).map(i=>`${e(i.quantity)}x ${e(i.name)}${i.notes?`<br/><small style="color:#b7c9da">Catatan: ${e(i.notes)}</small>`:''}`).join('<br/>')||'-'}</td><td>${e(o.cashierName||'-')}</td><td>${e(o.cookName||'-')}</td><td>Masuk ${f(o.orderDate)}<br/>Proses ${f(o.startedAt)}<br/>Siap ${f(o.readyAt)}<br/>Selesai ${f(o.completedAt)}</td></tr>`).join('');};run();setInterval(run,5000);});
+</script>}

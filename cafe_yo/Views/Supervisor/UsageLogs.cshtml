@@ -1,0 +1,13 @@
+@{ Layout = "~/Views/Shared/_LayoutAdmin.cshtml"; ViewData["Title"] = "Log Pemakaian"; }
+<style>
+.sv{background:#0d1118;color:#e8edf4;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1rem}.w{max-height:75vh;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:12px}
+.t{width:100%;border-collapse:collapse}.t th,.t td{padding:.55rem;border-bottom:1px solid rgba(255,255,255,.08)}.t th{position:sticky;top:0;background:#142031;color:#9db2c9;font-size:.78rem;text-align:left}
+</style>
+<section class="sv">
+<h1 style="margin:0 0 .5rem">Log Pemakaian Bahan</h1>
+<p style="color:#9db2c9"><a href="/Supervisor"><- Kembali</a></p>
+<div class="w"><table class="t"><thead><tr><th>Waktu</th><th>Order</th><th>Menu</th><th>Bahan</th><th>Qty</th><th>Sisa</th><th>Koki</th></tr></thead><tbody id="body"><tr><td colspan="7">Memuat...</td></tr></tbody></table></div>
+</section>
+@section Scripts{<script>
+document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('body');const f=(x)=>x?new Date(x).toLocaleString('id-ID'):'-';const run=async()=>{const r=await fetch('/api/supervisor/stock-usage-logs',{cache:'no-store'});if(!r.ok)return;const d=await r.json();const rows=Array.isArray(d?.logs)?d.logs:[];if(!rows.length){b.innerHTML='<tr><td colspan="7">Belum ada log penggunaan.</td></tr>';return;}b.innerHTML=rows.slice(0,200).map(x=>`<tr><td>${f(x.usedAt)}</td><td>${x.orderNumber||'-'}</td><td>${x.menuName||'-'}</td><td>${x.ingredient||'-'}</td><td>${x.qtyUsed}</td><td>${x.remainingStock}</td><td>${x.cookName||'-'}</td></tr>`).join('');};run();setInterval(run,7000);});
+</script>}

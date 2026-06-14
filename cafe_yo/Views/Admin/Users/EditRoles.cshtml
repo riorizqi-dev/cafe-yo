@@ -1,0 +1,51 @@
+﻿@model cafe_yo.Models.AdminEditUserRolesVM
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Edit User Roles";
+}
+
+<style>
+    .ur-wrap{color:#e9edf6}
+    .ur-card{background:linear-gradient(160deg,#111729,#0b1020);border:1px solid #27344f;border-radius:14px;padding:1rem}
+    .ur-user{font-size:1.95rem;font-weight:800;color:#f4f7ff;line-height:1.05}
+    .ur-name{color:#9fb0cf}
+    .ur-list{display:grid;gap:.55rem}
+    .ur-item{display:flex;align-items:center;gap:.7rem;padding:.7rem .85rem;border:1px solid #2a3a59;border-radius:12px;background:#0d1426;color:#ecf1ff}
+    .ur-item:hover{border-color:#48618e;background:#111a30}
+    .ur-item input[type="checkbox"]{
+        width:1.1rem;
+        height:1.1rem;
+        accent-color:#2b86ff;
+        cursor:pointer;
+    }
+    .ur-actions .btn{min-width:140px}
+</style>
+
+<section class="ur-wrap">
+    <h1 class="h4 mb-3">Edit User Roles</h1>
+
+    <div class="ur-card mb-3">
+        <div class="ur-user">@Model.UserName</div>
+        <div class="ur-name mt-1">@(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName : "-")</div>
+    </div>
+
+    <form method="post" action="/Admin/Users/@Model.UserId/Roles" class="ur-card">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="UserId" value="@Model.UserId" />
+        <div class="ur-list mb-3">
+            @for (int i = 0; i < Model.Roles.Count; i++)
+            {
+                <label class="ur-item">
+                    <input class="form-check-input" type="checkbox" name="Roles[@i].IsSelected" value="true" @(Model.Roles[i].IsSelected ? "checked" : "") />
+                    <input type="hidden" name="Roles[@i].Name" value="@Model.Roles[i].Name" />
+                    <span>@Model.Roles[i].Name</span>
+                </label>
+            }
+        </div>
+        @Html.ValidationSummary(false, "", new { @class = "text-danger mb-3" })
+        <div class="d-flex gap-2 ur-actions">
+            <a class="btn btn-outline-light" href="/Admin/Users">Batal</a>
+            <button class="btn btn-primary" type="submit">Save Roles</button>
+        </div>
+    </form>
+</section>

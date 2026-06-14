@@ -1,0 +1,49 @@
+@model cafe_yo.Models.KitchenOrderCardVm
+@{
+    string label = Model.Status == "processing" ? "Diproses" : Model.Status == "ready" ? "Selesai" : "Menunggu Diproses";
+    string timeLabel = Model.OrderDate?.ToString("HH:mm") ?? "-";
+}
+
+<article class="kitchen-card"
+         data-order-id="@Model.OrderId"
+         data-status="@Model.Status"
+         data-updated-at="@Model.UpdatedAt.ToString("o")">
+    <div class="kitchen-card-top">
+        <div>
+            <div class="kitchen-order-no">Order #@Model.OrderId</div>
+            <div class="kitchen-meta">Meja @(Model.TableNumber?.ToString() ?? "-") • @timeLabel</div>
+        </div>
+        <span class="kitchen-status-pill @Model.Status">@label</span>
+    </div>
+    <ul class="kitchen-items">
+        @foreach (var item in Model.Items)
+        {
+            <li>
+                <span class="qty">@item.Quantity x</span>
+                <span>@item.Name</span>
+                @if (!string.IsNullOrWhiteSpace(item.Notes))
+                {
+                    <small class="item-note">@item.Notes</small>
+                }
+            </li>
+        }
+    </ul>
+    @if (!string.IsNullOrWhiteSpace(Model.Note))
+    {
+        <div class="kitchen-note">Catatan: @Model.Note</div>
+    }
+    <div class="kitchen-actions">
+        @if (Model.Status == "pending")
+        {
+            <button class="btn kitchen-action-btn" data-next="processing">Mulai</button>
+        }
+        else if (Model.Status == "processing")
+        {
+            <button class="btn kitchen-action-btn done" data-next="ready">Tandai Selesai</button>
+        }
+        else
+        {
+            <button class="btn kitchen-action-btn disabled" disabled>Selesai</button>
+        }
+    </div>
+</article>

@@ -1,0 +1,138 @@
+@{
+    var title = ViewData["Title"] as string ?? "Staf";
+    var adminName = User?.Identity?.Name ?? "Staf";
+    var isAdmin = User?.IsInRole("Admin") == true;
+    var isOwner = User?.IsInRole("Owner") == true;
+    var isSupervisor = User?.IsInRole("Supervisor") == true;
+    var isKasir = User?.IsInRole("Kasir") == true;
+    var isKoki = User?.IsInRole("Koki") == true || User?.IsInRole("Dapur") == true;
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title - CafeYo</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .admin-navbar { background: #1E1E1E; border-bottom: 1px solid #333; }
+        .site-brand { font-family: 'Caveat', cursive; color: var(--gold); font-size: 1.4rem; }
+        .header-right { display:flex; gap:12px; align-items:center }
+        .header-right .greet { color: var(--muted); margin-right:6px }
+        .main-admin-container{padding:2rem}
+        .admin-menu{display:flex;gap:8px;flex-wrap:wrap}
+        .admin-menu .nav-link{color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-size:.85rem}
+        .admin-menu .nav-link:hover{background:rgba(255,215,0,.16);border-color:rgba(255,215,0,.35);color:#fff}
+        .main-admin-container .card{
+            background:linear-gradient(160deg,#111729,#0b1020);
+            border:1px solid #27344f;
+            color:#e9edf6;
+        }
+        .main-admin-container .card-header{
+            background:rgba(255,255,255,.02);
+            border-bottom:1px solid #2b3a56;
+            color:#f2f6ff;
+        }
+        .main-admin-container .card-body{color:#dbe6ff}
+        .main-admin-container .list-group-item{
+            background:#0d1426;
+            color:#e9edf6;
+            border-color:#2a3856;
+        }
+        .main-admin-container .form-control,
+        .main-admin-container .form-select{
+            background:#0d1426;
+            color:#ecf2ff;
+            border:1px solid #32456b;
+        }
+        .main-admin-container .form-control::placeholder{color:#8ea2c9}
+        .main-admin-container .form-control:focus,
+        .main-admin-container .form-select:focus{
+            background:#101a2f;
+            color:#f2f7ff;
+            border-color:#5d7db7;
+            box-shadow:0 0 0 .18rem rgba(93,125,183,.22);
+        }
+        .main-admin-container .table{
+            --bs-table-bg:#0d1426;
+            --bs-table-striped-bg:#131d34;
+            --bs-table-color:#e9edf6;
+            --bs-table-border-color:#2a3856;
+        }
+        @@media (max-width: 992px){
+            .admin-navbar .container-fluid{display:block}
+            .admin-menu{margin-top:10px}
+            .header-right{margin-top:10px;justify-content:flex-end}
+        }
+    </style>
+</head>
+<body class="site-root">
+    <nav class="navbar admin-navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="@(isAdmin ? "/Admin" : isOwner ? "/Owner" : isKasir ? "/Kasir" : isKoki ? "/Dapur" : "/Staff")">
+                <div class="logo-icon">&#9749;</div>
+                <span class="site-brand">Staf CafeYo</span>
+            </a>
+
+            <div class="admin-menu ms-2">
+                @if (isAdmin)
+                {
+                    <a class="nav-link" href="/Admin">Dasbor</a>
+                    <a class="nav-link" href="/Admin/Menu">Menu</a>
+                    <a class="nav-link" href="/Admin/Category">Kategori</a>
+                    <a class="nav-link" href="/Admin/Faq">FAQ Chatbot</a>
+                    <a class="nav-link" href="/Admin/Tables">Meja</a>
+                    <a class="nav-link" href="/Admin/Users">Pengguna</a>
+                    <a class="nav-link" href="/Admin/Roles">Peran</a>
+                    <a class="nav-link" href="/Admin/Settings">Pengaturan</a>
+                }
+                @if (isOwner)
+                {
+                    <a class="nav-link" href="/Owner">Dasbor</a>
+                    <a class="nav-link" href="/Owner/Reports">Laporan</a>
+                    <a class="nav-link" href="/Owner/Analytics">Analitik</a>
+                    <a class="nav-link" href="/Owner/MenuControl">Kontrol Menu</a>
+                    <a class="nav-link" href="/Owner/Users">Pengguna</a>
+                    <a class="nav-link" href="/Owner/System">Sistem</a>
+                    <a class="nav-link" href="/Admin">Admin</a>
+                    <a class="nav-link" href="/Kasir">Kasir</a>
+                    <a class="nav-link" href="/Kitchen">Dapur</a>
+                    <a class="nav-link" href="/Supervisor">Supervisor</a>
+                }
+                @if (isKasir)
+                {
+                    <a class="nav-link" href="/Kasir">Kasir</a>
+                }
+                @if (isKoki)
+                {
+                    <a class="nav-link" href="/Dapur">Dapur</a>
+                }
+                @if (isSupervisor)
+                {
+                    <a class="nav-link" href="/Supervisor">Supervisor</a>
+                }
+            </div>
+
+            <div class="header-right ms-auto me-3">
+                <div class="greet">Halo, @adminName</div>
+                <form method="post" action="/Auth/Logout" class="m-0">
+                    <button type="submit" class="btn btn-outline-light btn-sm">Keluar</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid main-admin-container">
+        @RenderBody()
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Akses Member";
+}
+
+<!-- Halaman fallback: gunakan popup yang sama -->
+<section id="menu" class="menu section">
+    <div class="container section-title" data-aos="fade-up">
+        <h2>Akses Member</h2>
+        <p>Masuk atau daftar untuk melanjutkan.</p>
+    </div>
+
+    <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="alert alert-dark" role="alert">
+            Popup Masuk/Daftar akan terbuka otomatis. Jika tidak muncul, pastikan JavaScript aktif.
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const authEl = document.getElementById('authModal');
+        if (authEl && typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(authEl, { backdrop: 'static' }).show();
+        }
+    });
+</script>

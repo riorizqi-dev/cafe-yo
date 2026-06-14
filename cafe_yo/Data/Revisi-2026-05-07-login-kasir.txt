@@ -1,0 +1,45 @@
+Revisi UI/UX Login & Kasir - 2026-05-07
+
+1) Form login: tambah tombol show/hide password (ikon mata)
+- Ditambahkan pada modal auth member:
+  - login password
+  - register password
+- Ditambahkan pada halaman staff login:
+  - staff password
+- Behavior JS:
+  - klik ikon mata => tampilkan/sembunyikan password
+  - icon berubah antara eye / eye-slash
+  - state reset saat modal auth dibuka ulang
+
+2) Form login: teks harus langsung terlihat (tidak abu-abu/fokus dulu)
+- Placeholder input auth dibuat lebih terang agar terbaca sejak awal.
+- Subtitle modal auth/table dibuat lebih jelas (warna lebih terang).
+- Teks deskripsi pada kartu login staff dibuat lebih terang.
+- Styling input password group disesuaikan agar tombol mata menyatu dengan field.
+
+3) Kasir: tampilan input pesanan customer disamakan dengan menu customer
+- Area input item kasir diubah dari dropdown row menjadi grid kartu menu (card) seperti customer.
+- Kartu menampilkan:
+  - gambar menu
+  - kategori/chip
+  - nama menu
+  - deskripsi
+  - harga
+  - tombol Tambah
+- Saat tombol Tambah ditekan:
+  - item masuk ke daftar order kasir
+  - quantity otomatis bertambah jika item sudah ada
+- Daftar item order tetap bisa:
+  - ubah qty
+  - isi catatan per item
+  - hapus item
+- Payload submit order ke backend tetap sama (menuItemId, quantity, notes).
+
+4) File yang direvisi
+- cafe_yo/Views/Shared/_Layout.cshtml
+- cafe_yo/Views/Auth/Staff.cshtml
+- cafe_yo/wwwroot/js/site.js
+- cafe_yo/Views/Kasir/index.cshtml
+- cafe_yo/wwwroot/js/kasir-page.js
+- cafe_yo/wwwroot/css/site.css
+

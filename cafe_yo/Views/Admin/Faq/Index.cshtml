@@ -1,0 +1,95 @@
+@model List<cafe_yo.Controllers.AdminFaqController.FaqRow>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "FAQ Chatbot";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">FAQ Chatbot</h1>
+</div>
+
+@if (TempData["FaqSuccess"] is string ok && !string.IsNullOrWhiteSpace(ok))
+{
+    <div class="alert alert-success">@ok</div>
+}
+@if (TempData["FaqError"] is string err && !string.IsNullOrWhiteSpace(err))
+{
+    <div class="alert alert-danger">@err</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card bg-dark text-light border-secondary">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Tambah FAQ</h2>
+                <form method="post" action="/Admin/Faq/Create">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2">
+                        <label class="form-label">Pertanyaan</label>
+                        <input class="form-control" name="Question" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Jawaban</label>
+                        <textarea class="form-control" name="Answer" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Keywords (pisahkan koma)</label>
+                        <input class="form-control" name="Keywords" placeholder="cara pesan,pembayaran,jam buka" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Urutan</label>
+                        <input class="form-control" type="number" min="0" name="SortOrder" value="0" />
+                    </div>
+                    <button class="btn btn-primary btn-sm" type="submit">Simpan FAQ</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="table-responsive">
+            <table class="table table-dark table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Pertanyaan</th>
+                        <th>Keywords</th>
+                        <th>Status</th>
+                        <th class="text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="4" class="text-center text-secondary">Belum ada FAQ.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var faq in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@faq.Question</div>
+                                    <small class="text-secondary">@faq.Answer</small>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(faq.Keywords) ? "-" : faq.Keywords)</td>
+                                <td>
+                                    <span class="badge @(faq.IsActive ? "bg-success" : "bg-secondary")">@(faq.IsActive ? "Aktif" : "Nonaktif")</span>
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" action="/Admin/Faq/@faq.FaqId/Toggle" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn btn-outline-warning btn-sm" type="submit">Toggle</button>
+                                    </form>
+                                    <form method="post" action="/Admin/Faq/@faq.FaqId/Delete" class="d-inline" onsubmit="return confirm('Hapus FAQ ini?');">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn btn-outline-danger btn-sm" type="submit">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

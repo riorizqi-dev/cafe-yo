@@ -1,0 +1,103 @@
+@model cafe_yo.Models.OwnerDashboardVm
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Owner Dashboard";
+    var id = new System.Globalization.CultureInfo("id-ID");
+    string Money(decimal v) => v.ToString("C0", id);
+    var range = Model.ReportRange;
+}
+
+<style>
+    .o-wrap{color:#e9edf6}.o-head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-end}
+    .o-title{font-size:2rem;font-weight:800;margin:0}.o-sub{margin:.2rem 0 0;color:#99a3b8}
+    .o-tabs{display:flex;gap:.45rem;flex-wrap:wrap;margin:.75rem 0}
+    .o-tab{padding:.45rem .75rem;border-radius:10px;border:1px solid #2d3d5f;background:#111a2d;color:#b6c8ea;text-decoration:none;font-weight:700}
+    .o-tab.active{background:linear-gradient(160deg,#1f355f,#183058);color:#eef5ff;border-color:#4a6aa1}
+    .o-chip{padding:.35rem .65rem;border-radius:999px;background:#13213b;border:1px solid #2b3f64;color:#9ec5ff;text-decoration:none}
+    .o-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-top:.9rem}
+    .o-card{background:linear-gradient(160deg,#111729,#0b1020);border:1px solid #27344f;border-radius:14px;padding:1rem}
+    .o-l{font-size:.84rem;color:#9aa3b8}.o-n{font-size:1.4rem;font-weight:800}
+    .o-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem}.o-list{display:grid;gap:.5rem}
+    .o-row{display:flex;justify-content:space-between;gap:.7rem;padding:.5rem .65rem;border:1px solid #263452;border-radius:10px;background:#0d1426}
+    .sev-warning{border-left:4px solid #f5c84c}.sev-danger{border-left:4px solid #f07171}.sev-success{border-left:4px solid #4bd37b}
+    @@media(max-width:980px){.o-kpi{grid-template-columns:1fr 1fr}.o-grid{grid-template-columns:1fr}}
+</style>
+
+<section class="o-wrap">
+    <div class="o-head">
+        <div>
+            <h1 class="o-title">Owner Dashboard</h1>
+            <p class="o-sub">Ringkasan bisnis cepat. Detail lengkap ada di Reports dan Analytics.</p>
+        </div>
+    </div>
+
+    <div class="o-tabs">
+        <a class="o-tab active" href="/Owner?range=@range">Dashboard</a>
+        <a class="o-tab" href="/Owner/Reports?range=@range">Reports</a>
+        <a class="o-tab" href="/Owner/Analytics?range=@range">Analytics</a>
+    </div>
+
+    <div class="o-head">
+        <div class="d-flex gap-2">
+            <a class="o-chip @(range=="daily"?"fw-bold":"")" href="/Owner?range=daily">Harian</a>
+            <a class="o-chip @(range=="weekly"?"fw-bold":"")" href="/Owner?range=weekly">Mingguan</a>
+            <a class="o-chip @(range=="monthly"?"fw-bold":"")" href="/Owner?range=monthly">Bulanan</a>
+        </div>
+    </div>
+
+    <div class="o-kpi">
+        <div class="o-card"><div class="o-l"><i class="bi bi-cash-stack me-1"></i>Omzet Hari Ini</div><div class="o-n">@Money(Model.TodayRevenue)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-calendar-week me-1"></i>Omzet Minggu Ini</div><div class="o-n">@Money(Model.WeekRevenue)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-calendar2-week me-1"></i>Omzet Bulan Ini</div><div class="o-n">@Money(Model.MonthRevenue)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-graph-up-arrow me-1"></i>Estimasi Profit (@range)</div><div class="o-n">@Money(Model.EstimatedProfit)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-receipt me-1"></i>Rata-rata Transaksi</div><div class="o-n">@Money(Model.AverageTransaction)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-people me-1"></i>Rata-rata per Customer</div><div class="o-n">@Money(Model.AveragePurchasePerCustomer)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-wallet2 me-1"></i>Pengeluaran Hari Ini</div><div class="o-n">@Money(Model.ExpensesToday)</div></div>
+        <div class="o-card"><div class="o-l"><i class="bi bi-wallet me-1"></i>Pengeluaran Bulan Ini</div><div class="o-n">@Money(Model.ExpensesMonth)</div></div>
+    </div>
+
+    <div class="o-grid">
+        <div class="o-card">
+            <strong>Insight Cepat</strong>
+            <div class="o-list mt-2">
+                <div class="o-row"><span>Menu paling laku</span><strong>@(Model.TopProducts.FirstOrDefault()?.Name ?? "-")</strong></div>
+                <div class="o-row"><span>Jam paling ramai</span><strong>@Model.BusiestHourLabel</strong></div>
+                <div class="o-row"><span>Hari paling ramai</span><strong>@Model.BusiestDayLabel</strong></div>
+                <div class="o-row"><span>Transaksi hari ini</span><strong>@Model.TodayTransactions</strong></div>
+            </div>
+        </div>
+        <div class="o-card">
+            <strong>Alert Operasional</strong>
+            <div class="o-list mt-2">
+                @foreach (var a in Model.Alerts.Take(6))
+                {
+                    <div class="o-row sev-@a.Severity"><span>@a.Type.ToUpperInvariant()</span><strong>@a.Message</strong></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="o-card mt-2">
+        <strong>Owner Control Center</strong>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <a class="o-chip" href="/Owner/MenuControl">Approve/Reject Menu</a>
+            <a class="o-chip" href="/Owner/Users">Manajemen User</a>
+            <a class="o-chip" href="/Owner/System">Pengaturan Sistem</a>
+            <a class="o-chip" href="/Kasir">Override Kasir</a>
+            <a class="o-chip" href="/Kitchen">Override Dapur</a>
+            <a class="o-chip" href="/Admin">Override Admin</a>
+            <a class="o-chip" href="/Supervisor">Override Supervisor</a>
+        </div>
+    </div>
+
+    @if (Model.ShowDebug)
+    {
+        <div class="o-card mt-2">
+            <strong>Debug (Development)</strong>
+            <div class="o-list mt-2">
+                <div class="o-row"><span>Jumlah order dihitung</span><strong>@Model.DebugQualifiedOrders</strong></div>
+                <div class="o-row"><span>Total nominal dihitung</span><strong>@Money(Model.DebugQualifiedTotal)</strong></div>
+            </div>
+        </div>
+    }
+</section>

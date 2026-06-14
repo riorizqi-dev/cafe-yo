@@ -1,0 +1,29 @@
+﻿@model cafe_yo.Models.StockItem
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Stock Item Details";
+}
+
+<h1 class="h4 mb-3">Stock Item Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">ID</dt>
+    <dd class="col-sm-9">@Model.StockItemId</dd>
+
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Name) ? Model.Name : "-")</dd>
+
+    <dt class="col-sm-3">Type</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Type) ? Model.Type : "-")</dd>
+
+    <dt class="col-sm-3">Quantity</dt>
+    <dd class="col-sm-9">@((Model.Quantity.HasValue) ? Model.Quantity.Value.ToString() : "-")</dd>
+
+    <dt class="col-sm-3">Min Quantity</dt>
+    <dd class="col-sm-9">@((Model.MinQuantity.HasValue) ? Model.MinQuantity.Value.ToString() : "-")</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/Admin/StockItems">Kembali</a>
+    <a class="btn btn-outline-primary" href="/Admin/StockItems/Edit/@Model.StockItemId">Edit</a>
+</div>

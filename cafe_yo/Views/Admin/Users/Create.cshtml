@@ -1,0 +1,55 @@
+﻿@model cafe_yo.Models.AdminCreateUserVM
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Tambah Staff";
+}
+
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Tambah Akun Staff</h1>
+        <a class="btn btn-outline-light btn-sm" href="/Admin/Users">Kembali</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Form Staff Baru</div>
+        <div class="card-body">
+            <form method="post" action="/Admin/Users/Create">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input class="form-control" name="FullName" value="@Model.FullName" />
+                        @Html.ValidationMessage("FullName", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Username</label>
+                        <input class="form-control" name="UserName" value="@Model.UserName" />
+                        @Html.ValidationMessage("UserName", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Password</label>
+                        <input class="form-control" name="Password" type="password" />
+                        @Html.ValidationMessage("Password", new { @class = "text-danger" })
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" name="RoleName">
+                            <option value="">-- pilih role --</option>
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                var selected = string.Equals(Model.RoleName, role, System.StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+                                <option value="@role" selected="@selected">@role</option>
+                            }
+                        </select>
+                        @Html.ValidationMessage("RoleName", new { @class = "text-danger" })
+                    </div>
+                </div>
+                @Html.ValidationSummary(false, "", new { @class = "text-danger mt-3" })
+                <div class="mt-3 d-flex gap-2">
+                    <a class="btn btn-outline-light" href="/Admin/Users">Batal</a>
+                    <button class="btn btn-primary" type="submit">Buat Akun</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>

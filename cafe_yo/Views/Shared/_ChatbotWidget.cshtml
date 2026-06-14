@@ -1,0 +1,264 @@
+<div class="cy-chatbot" id="cyChatbot">
+    <button type="button" class="cy-chatbot__fab" id="cyChatbotToggle" aria-label="Buka chatbot customer service">
+        <svg viewBox="0 0 64 64" class="cy-chatbot__fab-icon" aria-hidden="true">
+            <defs>
+                <linearGradient id="cyChatFabGradient" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#ffd166"></stop>
+                    <stop offset="1" stop-color="#f59e0b"></stop>
+                </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="30" fill="url(#cyChatFabGradient)"></circle>
+            <path d="M20 20h24a8 8 0 0 1 8 8v8a8 8 0 0 1-8 8H31l-8 7v-7h-3a8 8 0 0 1-8-8v-8a8 8 0 0 1 8-8Z" fill="#3f2a16" opacity=".95"></path>
+            <path d="M27 29h18M27 35h12" stroke="#ffd89a" stroke-width="3.2" stroke-linecap="round"></path>
+            <path d="M18 21h9a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-9v-8Z" fill="#2c1a0f"></path>
+            <path d="M29 24h2.8a2.2 2.2 0 1 1 0 4.4H29" fill="none" stroke="#ffd89a" stroke-width="2" stroke-linecap="round"></path>
+            <path d="M20 16c0-2.6 2.1-4.8 4.8-4.8" stroke="#fff2d5" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+    </button>
+
+    <section class="cy-chatbot__panel" id="cyChatbotPanel" aria-live="polite" hidden>
+        <header class="cy-chatbot__header">
+            <div>
+                <div class="cy-chatbot__title">CafeYo Assistant</div>
+                <div class="cy-chatbot__subtitle">FAQ, stok menu, dan harga real-time</div>
+            </div>
+            <button type="button" class="cy-chatbot__close" id="cyChatbotClose" aria-label="Tutup chatbot">&times;</button>
+        </header>
+
+        <div class="cy-chatbot__messages" id="cyChatbotMessages"></div>
+
+        <form class="cy-chatbot__form" id="cyChatbotForm">
+            <input type="text" id="cyChatbotInput" maxlength="500" class="form-control" placeholder="Tanya: stok kopi susu, harga menu, dll..." required>
+            <button type="submit" class="btn btn-warning">Kirim</button>
+        </form>
+    </section>
+</div>
+
+<style>
+    .cy-chatbot {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 5000;
+        transition: bottom .2s ease;
+    }
+    .cy-chatbot.cy-chatbot--avoid-footer { bottom: 92px; }
+
+    .cy-chatbot__fab {
+        width: 64px;
+        height: 64px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        padding: 0;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, .35);
+        transition: transform .2s ease, box-shadow .2s ease;
+        overflow: hidden;
+    }
+
+    .cy-chatbot__fab:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 16px 34px rgba(0, 0, 0, .42);
+    }
+
+    .cy-chatbot__fab-icon {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .cy-chatbot__panel {
+        width: min(380px, calc(100vw - 24px));
+        height: min(520px, calc(100vh - 110px));
+        background: rgba(20, 20, 20, .98);
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 18px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+        box-shadow: 0 24px 46px rgba(0, 0, 0, .45);
+        backdrop-filter: blur(6px);
+    }
+
+    .cy-chatbot__header {
+        padding: 12px 14px;
+        background: linear-gradient(135deg, rgba(255, 209, 102, .25), rgba(245, 158, 11, .15));
+        border-bottom: 1px solid rgba(255, 255, 255, .12);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cy-chatbot__title {
+        color: #fff;
+        font-weight: 700;
+        font-size: .95rem;
+    }
+
+    .cy-chatbot__subtitle {
+        color: #d1d5db;
+        font-size: .75rem;
+    }
+
+    .cy-chatbot__close {
+        border: 0;
+        background: rgba(255,255,255,.08);
+        color: #fff;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        line-height: 30px;
+        font-size: 1.3rem;
+    }
+
+    .cy-chatbot__messages {
+        flex: 1;
+        overflow: auto;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .cy-chatbot__bubble {
+        max-width: 88%;
+        border-radius: 12px;
+        padding: 9px 11px;
+        font-size: .9rem;
+        line-height: 1.38;
+        white-space: pre-wrap;
+    }
+
+    .cy-chatbot__bubble--bot {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, .08);
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, .12);
+    }
+
+    .cy-chatbot__bubble--user {
+        align-self: flex-end;
+        background: rgba(245, 158, 11, .22);
+        color: #fff7e6;
+        border: 1px solid rgba(245, 158, 11, .4);
+    }
+
+    .cy-chatbot__form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        padding: 10px;
+        border-top: 1px solid rgba(255, 255, 255, .1);
+        background: rgba(0, 0, 0, .18);
+    }
+
+    @@media (max-width: 576px) {
+        .cy-chatbot {
+            right: 12px;
+            bottom: 12px;
+        }
+        .cy-chatbot.cy-chatbot--avoid-footer { bottom: 96px; }
+
+        .cy-chatbot__fab {
+            width: 58px;
+            height: 58px;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        const root = document.getElementById("cyChatbot");
+        const panel = document.getElementById("cyChatbotPanel");
+        const toggle = document.getElementById("cyChatbotToggle");
+        const closeBtn = document.getElementById("cyChatbotClose");
+        const messages = document.getElementById("cyChatbotMessages");
+        const form = document.getElementById("cyChatbotForm");
+        const input = document.getElementById("cyChatbotInput");
+        const footer = document.querySelector(".site-footer");
+
+        if (!root || !panel || !toggle || !messages || !form || !input) return;
+
+        let isOpen = false;
+
+        const addBubble = (text, sender) => {
+            const el = document.createElement("div");
+            el.className = "cy-chatbot__bubble " + (sender === "user" ? "cy-chatbot__bubble--user" : "cy-chatbot__bubble--bot");
+            el.textContent = text;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+        };
+
+        addBubble("Halo. Saya siap bantu FAQ, cek stok menu, harga, dan daftar menu per kategori.", "bot");
+
+        const setOpen = (open) => {
+            isOpen = Boolean(open);
+            panel.hidden = !isOpen;
+            toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            if (isOpen) {
+                input.focus();
+            }
+        };
+
+        toggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            setOpen(!isOpen);
+        });
+        closeBtn?.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(false);
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && isOpen) {
+                setOpen(false);
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (!isOpen) return;
+            if (!root.contains(e.target)) {
+                setOpen(false);
+            }
+        });
+
+        const syncFooterAvoidance = () => {
+            if (!footer) return;
+            const botRect = root.getBoundingClientRect();
+            const footerRect = footer.getBoundingClientRect();
+            const overlap = botRect.bottom > footerRect.top && botRect.top < footerRect.bottom;
+            root.classList.toggle("cy-chatbot--avoid-footer", overlap);
+        };
+        window.addEventListener("scroll", syncFooterAvoidance, { passive: true });
+        window.addEventListener("resize", syncFooterAvoidance);
+        syncFooterAvoidance();
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const message = input.value.trim();
+            if (!message) return;
+
+            addBubble(message, "user");
+            input.value = "";
+            input.disabled = true;
+
+            try {
+                const resp = await fetch("/api/chatbot/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+
+                const json = await resp.json();
+                const reply = json?.data?.answer || "Maaf, jawaban sedang tidak tersedia.";
+                addBubble(reply, "bot");
+            } catch {
+                addBubble("Koneksi ke server sedang bermasalah. Coba lagi sebentar ya.", "bot");
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        });
+    })();
+</script>

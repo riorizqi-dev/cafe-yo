@@ -1,0 +1,134 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Area Staf CafeYo";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="site-root staff-page">
+    <main class="staff-shell">
+        <section class="staff-card fade-in-soft">
+            <div class="staff-badge">CafeYo</div>
+            <h1>Area Staf CafeYo</h1>
+            <p>Login untuk kasir, koki, supervisor, dan owner</p>
+
+            <div class="alert alert-danger d-none" id="staffLoginError" role="alert"></div>
+            <div class="mb-3">
+                <label for="staffUsername" class="form-label auth-modal-label">Nama Pengguna</label>
+                <input id="staffUsername" type="text" class="form-control auth-modal-input" autocomplete="off" />
+            </div>
+            <div class="mb-3">
+                <label for="staffPassword" class="form-label auth-modal-label">Kata Sandi</label>
+                <div class="input-group auth-password-group">
+                    <input id="staffPassword" type="password" class="form-control auth-modal-input" autocomplete="new-password" placeholder="Masukkan kata sandi" />
+                    <button type="button" class="btn auth-password-toggle" id="staffPasswordToggle" aria-label="Tampilkan password" aria-pressed="false">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button id="staffLoginBtn" class="btn btn-gold w-100" type="button">Masuk</button>
+
+            <a href="/" class="staff-back-link">Kembali ke Customer Area</a>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const btn = document.getElementById("staffLoginBtn");
+            const username = document.getElementById("staffUsername");
+            const password = document.getElementById("staffPassword");
+            const passwordToggle = document.getElementById("staffPasswordToggle");
+            const error = document.getElementById("staffLoginError");
+
+            const setError = (msg) => {
+                if (!error) return;
+                error.textContent = msg || "";
+                error.classList.toggle("d-none", !msg);
+            };
+
+            const bindPasswordToggle = (inputEl, toggleEl) => {
+                if (!inputEl || !toggleEl) return;
+                toggleEl.addEventListener("click", () => {
+                    const show = inputEl.type === "password";
+                    inputEl.type = show ? "text" : "password";
+                    toggleEl.setAttribute("aria-label", show ? "Sembunyikan password" : "Tampilkan password");
+                    toggleEl.setAttribute("aria-pressed", show ? "true" : "false");
+                    const icon = toggleEl.querySelector("i");
+                    if (icon) {
+                        icon.className = show ? "bi bi-eye-slash" : "bi bi-eye";
+                    }
+                });
+            };
+
+            bindPasswordToggle(password, passwordToggle);
+
+            const doLogin = async () => {
+                const u = (username?.value || "").trim();
+                const p = password?.value || "";
+                if (!u || !p) {
+                    setError("Nama pengguna dan kata sandi wajib diisi.");
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Memproses...`;
+                setError("");
+                let timeout = null;
+                try {
+                    const controller = new AbortController();
+                    timeout = setTimeout(() => controller.abort(), 15000);
+                    const res = await fetch("/Auth/AjaxLogin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ username: u, password: p, returnUrl: "/" }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeout);
+
+                    let data = null;
+                    try {
+                        data = await res.json();
+                    } catch (_jsonErr) {
+                        setError("Respons server tidak valid. Coba refresh halaman.");
+                        return;
+                    }
+
+                    if (!data || !data.success) {
+                        setError((data && data.error) || "Login gagal.");
+                        return;
+                    }
+                    window.location.href = data.redirectUrl || "/staff";
+                } catch (_e) {
+                    if (_e && _e.name === "AbortError") {
+                        setError("Server terlalu lama merespons. Cek koneksi database/server.");
+                    } else {
+                        setError("Gagal menghubungi server.");
+                    }
+                } finally {
+                    if (timeout) clearTimeout(timeout);
+                    btn.disabled = false;
+                    btn.textContent = "Masuk";
+                }
+            };
+
+            btn?.addEventListener("click", doLogin);
+            password?.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") doLogin();
+            });
+            username?.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") doLogin();
+            });
+        });
+    </script>
+</body>
+</html>

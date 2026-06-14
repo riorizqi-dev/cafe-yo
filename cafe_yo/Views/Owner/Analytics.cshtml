@@ -1,0 +1,138 @@
+@model cafe_yo.Models.OwnerDashboardVm
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Owner Analytics";
+    var range = Model.ReportRange;
+}
+
+<style>
+    .a-wrap{color:#e9edf6}.a-head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-end}
+    .a-title{font-size:1.8rem;font-weight:800;margin:0}.a-sub{margin:.2rem 0 0;color:#99a3b8}
+    .a-tabs{display:flex;gap:.45rem;flex-wrap:wrap;margin:.75rem 0}
+    .a-tab{padding:.45rem .75rem;border-radius:10px;border:1px solid #2d3d5f;background:#111a2d;color:#b6c8ea;text-decoration:none;font-weight:700}
+    .a-tab.active{background:linear-gradient(160deg,#1f355f,#183058);color:#eef5ff;border-color:#4a6aa1}
+    .a-chip{padding:.35rem .65rem;border-radius:999px;background:#13213b;border:1px solid #2b3f64;color:#9ec5ff;text-decoration:none}
+    .a-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:.8rem;margin-top:.9rem}
+    .a-card{background:linear-gradient(160deg,#111729,#0b1020);border:1px solid #27344f;border-radius:14px;padding:1rem}
+    .a-list{display:grid;gap:.5rem}.a-row{display:flex;justify-content:space-between;border:1px solid #27344f;padding:.5rem .65rem;border-radius:10px;background:#0d1426}
+    @@media(max-width:980px){.a-grid{grid-template-columns:1fr}}
+</style>
+
+<section class="a-wrap">
+    <div class="a-head">
+        <div>
+            <h1 class="a-title">Owner Analytics</h1>
+            <p class="a-sub">Tren omzet, transaksi, dan pola perilaku pembelian.</p>
+        </div>
+    </div>
+
+    <div class="a-tabs">
+        <a class="a-tab" href="/Owner?range=@range">Dashboard</a>
+        <a class="a-tab" href="/Owner/Reports?range=@range">Reports</a>
+        <a class="a-tab active" href="/Owner/Analytics?range=@range">Analytics</a>
+    </div>
+
+    <div class="a-head">
+        <div class="d-flex gap-2">
+            <a class="a-chip @(range=="daily"?"fw-bold":"")" href="/Owner/Analytics?range=daily">Harian</a>
+            <a class="a-chip @(range=="weekly"?"fw-bold":"")" href="/Owner/Analytics?range=weekly">Mingguan</a>
+            <a class="a-chip @(range=="monthly"?"fw-bold":"")" href="/Owner/Analytics?range=monthly">Bulanan</a>
+        </div>
+    </div>
+
+    <div class="a-grid">
+        <div class="a-card">
+            <h2 class="h6 mb-2">Grafik Omzet 7 Hari</h2>
+            <canvas id="ownerOmzetChart" height="110"></canvas>
+        </div>
+        <div class="a-card">
+            <h2 class="h6 mb-2">Grafik Jumlah Transaksi 7 Hari</h2>
+            <canvas id="ownerTxnChart" height="110"></canvas>
+        </div>
+    </div>
+
+    <div class="a-grid mt-2">
+        <div class="a-card">
+            <h2 class="h6 mb-2">Insight Performa</h2>
+            <div class="a-list">
+                <div class="a-row"><span>Jam paling ramai</span><strong>@Model.BusiestHourLabel</strong></div>
+                <div class="a-row"><span>Hari paling ramai</span><strong>@Model.BusiestDayLabel</strong></div>
+                <div class="a-row"><span>Top menu</span><strong>@(Model.TopProducts.FirstOrDefault()?.Name ?? "-")</strong></div>
+                <div class="a-row"><span>Rata-rata per customer</span><strong>@Model.AveragePurchasePerCustomer.ToString("C0", new System.Globalization.CultureInfo("id-ID"))</strong></div>
+                <div class="a-row"><span>Total data terhitung</span><strong>@Model.DebugQualifiedOrders transaksi</strong></div>
+            </div>
+        </div>
+        <div class="a-card">
+            <h2 class="h6 mb-2">Kualitas Data</h2>
+            <div class="a-list">
+                <div class="a-row"><span>Rule data</span><strong>Completed + Lunas</strong></div>
+                <div class="a-row"><span>Timezone</span><strong>WIB (SE Asia)</strong></div>
+                <div class="a-row"><span>Update source</span><strong>PaidAt/OrderDate</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="a-grid mt-2">
+        <div class="a-card">
+            <h2 class="h6 mb-2">Insight Otomatis</h2>
+            <div class="a-list">
+                @foreach (var i in Model.AutoInsights)
+                {
+                    <div class="a-row"><span>@i.Title</span><strong>@i.Description</strong></div>
+                }
+            </div>
+        </div>
+        <div class="a-card">
+            <h2 class="h6 mb-2">Menu Kurang Laku</h2>
+            <div class="a-list">
+                @if (Model.LowProducts.Count == 0)
+                {
+                    <div class="a-row"><span>-</span><strong>Belum ada data</strong></div>
+                }
+                else
+                {
+                    foreach (var p in Model.LowProducts)
+                    {
+                        <div class="a-row"><span>@p.Name</span><strong>@p.Qty qty</strong></div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script>
+        (() => {
+            const omzetSeries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OmzetSeries));
+            const txnSeries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TransactionSeries));
+            const labels = omzetSeries.map(x => x.label);
+            const omzet = omzetSeries.map(x => Number(x.value || 0));
+            const txns = txnSeries.map(x => Number(x.value || 0));
+            const rupiah = (n) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(n || 0));
+
+            const commonGrid = { color: "rgba(255,255,255,0.08)" };
+            const commonTicks = { color: "#c7d2e8" };
+            const legend = { labels: { color: "#e9edf6" } };
+
+            const canvas1 = document.getElementById("ownerOmzetChart");
+            if (canvas1) {
+                new Chart(canvas1, {
+                    type: "line",
+                    data: { labels, datasets: [{ label: "Omzet", data: omzet, borderColor: "#3ecf8e", backgroundColor: "rgba(62,207,142,.2)", fill: true, tension: .3 }] },
+                    options: { responsive: true, plugins: { legend, tooltip: { callbacks: { label: (ctx) => rupiah(ctx.parsed.y) } } }, scales: { x: { ticks: commonTicks, grid: commonGrid }, y: { ticks: commonTicks, grid: commonGrid } } }
+                });
+            }
+
+            const canvas2 = document.getElementById("ownerTxnChart");
+            if (canvas2) {
+                new Chart(canvas2, {
+                    type: "bar",
+                    data: { labels, datasets: [{ label: "Transaksi", data: txns, borderColor: "#5aa8ff", backgroundColor: "rgba(90,168,255,.35)", borderWidth: 1 }] },
+                    options: { responsive: true, plugins: { legend }, scales: { x: { ticks: commonTicks, grid: commonGrid }, y: { beginAtZero: true, ticks: commonTicks, grid: commonGrid } } }
+                });
+            }
+        })();
+    </script>
+}

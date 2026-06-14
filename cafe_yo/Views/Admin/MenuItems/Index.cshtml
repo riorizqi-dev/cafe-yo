@@ -1,0 +1,92 @@
+@model List<cafe_yo.Models.MenuItem>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Menu Items";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Menu Items</h1>
+    <a class="btn btn-primary btn-sm" href="/Admin/MenuItems/Create">Add Menu Item</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-admin-menu align-middle">
+        <thead class="table-admin-head">
+            <tr>
+                <th>ID</th>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Available</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr>
+                <td colspan="8" class="text-center text-white-50">No menu items.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in Model)
+            {
+                var photo = string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/menu/nasi-goreng.jpg" : item.ImageUrl;
+                <tr>
+                    <td>@item.MenuItemId</td>
+                    <td>
+                        <img src="@photo" alt="@item.Name" class="menu-admin-thumb"
+                             onerror="this.onerror=null;this.src='/images/menu/nasi-goreng.jpg';" />
+                    </td>
+                    <td>@item.Name</td>
+                    <td>@(string.IsNullOrWhiteSpace(item.Category) ? "-" : item.Category)</td>
+                    <td>@item.Price.ToString("C0", new System.Globalization.CultureInfo("id-ID"))</td>
+                    <td>@item.Stock</td>
+                    <td>@(item.IsAvailable.HasValue ? (item.IsAvailable.Value ? "Yes" : "No") : "-")</td>
+                    <td class="text-end">
+                        <a class="btn btn-outline-secondary btn-sm" href="/Admin/MenuItems/@item.MenuItemId">Details</a>
+                        <a class="btn btn-outline-primary btn-sm" href="/Admin/MenuItems/Edit/@item.MenuItemId">Edit</a>
+                        <a class="btn btn-outline-danger btn-sm" href="/Admin/MenuItems/Delete/@item.MenuItemId">Delete</a>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .table-admin-menu {
+        --bs-table-bg: rgba(255,255,255,.03);
+        --bs-table-color: #fff;
+        --bs-table-border-color: rgba(255,255,255,.12);
+        --bs-table-striped-bg: rgba(255,255,255,.06);
+        --bs-table-striped-color: #fff;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 14px;
+        overflow: hidden;
+        backdrop-filter: blur(2px);
+    }
+
+    .table-admin-head th {
+        background: rgba(12, 20, 32, .88) !important;
+        color: #eaf4ff !important;
+        border-bottom-color: rgba(255,255,255,.14) !important;
+    }
+
+    .table-admin-menu td, .table-admin-menu th {
+        vertical-align: middle;
+    }
+
+    .menu-admin-thumb {
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,.2);
+        background: rgba(255,255,255,.08);
+    }
+</style>

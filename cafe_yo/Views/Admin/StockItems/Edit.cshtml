@@ -1,0 +1,38 @@
+﻿@model cafe_yo.Models.StockItem
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Edit Stock Item";
+    var typeValue = Model.Type ?? string.Empty;
+}
+
+<h1 class="h4 mb-3">Edit Stock Item</h1>
+
+<form method="post" action="/Admin/StockItems/Edit/@Model.StockItemId">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="StockItemId" value="@Model.StockItemId" />
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="Name" value="@Model.Name" />
+        @Html.ValidationMessage("Name", new { @class = "text-danger" })
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Type</label>
+        <select class="form-select" name="Type">
+            <option value="">-</option>
+            <option value="RawMaterial" selected="@(typeValue == "RawMaterial")">RawMaterial</option>
+            <option value="Fragile" selected="@(typeValue == "Fragile")">Fragile</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Quantity</label>
+        <input class="form-control" name="Quantity" type="number" value="@Model.Quantity" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Min Quantity</label>
+        <input class="form-control" name="MinQuantity" type="number" value="@Model.MinQuantity" />
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/Admin/StockItems">Batal</a>
+        <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+</form>

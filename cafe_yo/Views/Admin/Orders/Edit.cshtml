@@ -1,0 +1,39 @@
+﻿@model cafe_yo.Models.AdminOrderEditVM
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Update Order Status";
+    var statusValue = Model.Status ?? string.Empty;
+}
+
+<h1 class="h4 mb-3">Update Order Status</h1>
+
+<form method="post" action="/Admin/Orders/Edit/@Model.OrderId">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="OrderId" value="@Model.OrderId" />
+    <div class="mb-3">
+        <label class="form-label">ID Pesanan</label>
+        <input class="form-control" value="@Model.OrderId" disabled />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Table</label>
+        <input class="form-control" value="@((Model.TableNumber.HasValue) ? $"#{Model.TableNumber.Value}" : "-")" disabled />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Tanggal Pesanan</label>
+        <input class="form-control" value="@Model.OrderDate?.ToString("yyyy-MM-dd HH:mm")" disabled />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="Status">
+            <option value="New" selected="@(statusValue == "New")">New</option>
+            <option value="Cooking" selected="@(statusValue == "Cooking")">Cooking</option>
+            <option value="Ready" selected="@(statusValue == "Ready")">Ready</option>
+            <option value="Paid" selected="@(statusValue == "Paid")">Paid</option>
+        </select>
+        @Html.ValidationMessage("Status", new { @class = "text-danger" })
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/Admin/Orders">Batal</a>
+        <button class="btn btn-primary" type="submit">Update</button>
+    </div>
+</form>

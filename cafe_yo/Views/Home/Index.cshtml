@@ -1,0 +1,1143 @@
+@model cafe_yo.Models.HomeIndexViewModel
+@{
+    ViewData["Title"] = "Home";
+    var cartOnly = (ViewData["CartOnly"] as bool?) == true;
+
+    string BuildMenuDescription(string? name, string? dbDescription)
+    {
+        if (!string.IsNullOrWhiteSpace(dbDescription))
+        {
+            return dbDescription!.Trim();
+        }
+
+        var n = (name ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(n))
+        {
+            return "Menu favorit hari ini";
+        }
+
+        if (n.Contains("ayam bakar")) return "Ayam bakar dengan bumbu khas, manis gurih, dan juicy sampai ke dalam.";
+        if (n.Contains("steak")) return "Daging steak juicy dengan bumbu gurih, disajikan hangat dengan saus spesial.";
+        if (n.Contains("cromboloni")) return "Pastry renyah berlapis dengan lelehan coklat premium yang lumer.";
+        if (n.Contains("dimsum mentai")) return "Dimsum lembut dengan saus mentai creamy dan sedikit pedas.";
+        if (n.Contains("dimsum")) return "Dimsum hangat dengan isian lembut, gurih, dan bikin nagih.";
+        if (n.Contains("nasi goreng")) return "Nasi goreng wok hei dengan bumbu medok, gurih, dan aroma smoky.";
+        if (n.Contains("mie goreng")) return "Mie kenyal dengan tumisan bumbu spesial, manis gurih yang pas.";
+        if (n.Contains("soto ayam")) return "Kuah soto ayam hangat, segar, kaya rempah dengan topping melimpah.";
+        if (n.Contains("kopi susu")) return "Espresso bold dipadukan susu creamy, seimbang dan smooth.";
+        if (n.Contains("es teh")) return "Teh melati dingin yang ringan, segar, dan pas untuk teman makan.";
+        if (n.Contains("pisang goreng")) return "Pisang goreng renyah di luar, lembut manis di dalam.";
+
+        return "Menu favorit hari ini";
+    }
+
+    string ResolveMenuImage(string? imageUrl, string? category)
+    {
+        if (!string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return imageUrl!;
+        }
+
+        var cat = (category ?? string.Empty).Trim().ToLowerInvariant();
+        return cat switch
+        {
+            "food" or "makanan" => "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80",
+            "drink" or "minuman" => "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=1200&q=80",
+            "dessert" or "pencuci mulut" => "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1200&q=80",
+            "jajanan" or "snack" => "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1200&q=80",
+            _ => "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80"
+        };
+    }
+}
+
+<section class="customer-dashboard py-4 py-lg-5 @(cartOnly ? "cart-only" : "menu-only")" id="menu">
+    <div class="dashboard-header mb-4">
+        <div>
+            <div class="badge-soft">Dashboard Utama</div>
+            <h1 class="dashboard-title">Pesan Makanan & Minuman</h1>
+            <p class="dashboard-sub">Pilih menu, tambahkan ke keranjang, lalu bayar via QRIS.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-lg-0" id="customerQuickNav">
+            <a class="btn btn-outline-light btn-sm quick-nav-btn @(cartOnly ? "" : "is-active")" data-nav="menu" href="/menu">Menu</a>
+            <a class="btn btn-outline-light btn-sm quick-nav-btn @(cartOnly ? "is-active" : "")" data-nav="cart" id="quickCartBtn" href="/keranjang">Keranjang</a>
+            <a class="btn btn-outline-light btn-sm quick-nav-btn" data-nav="orders" href="/pesanan-saya">Pesanan Saya</a>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="menu-pane @(cartOnly ? "d-none" : "")">
+            <div class="menu-surface">
+                <div class="menu-toolbar">
+                    <div class="menu-title-block">
+                        <div class="menu-eyebrow">Jelajahi Menu</div>
+                        <h2 class="menu-title-main">Menu Favorit Hari Ini</h2>
+                        <div class="menu-hint">Klik tambah untuk masuk keranjang.</div>
+                    </div>
+                    <div class="menu-cats" role="tablist" aria-label="Kategori Menu">
+                        <button class="cat-btn active" data-cat="all">Semua</button>
+                        <button class="cat-btn" data-cat="food">Makanan</button>
+                        <button class="cat-btn" data-cat="jajanan">Jajanan</button>
+                        <button class="cat-btn" data-cat="drink">Minuman</button>
+                        <button class="cat-btn" data-cat="dessert">Pencuci Mulut</button>
+                    </div>
+                </div>
+
+                <div class="menu-grid">
+                    @if (Model.MenuItems.Count == 0)
+                    {
+                        <div class="alert alert-warning">Menu belum tersedia.</div>
+                    }
+                    else
+                    {
+                        foreach (var it in Model.MenuItems.Where(x => x.IsAvailable != false && x.Stock > 0))
+                        {
+                            var rawCat = string.IsNullOrWhiteSpace(it.Category) ? "lainnya" : it.Category!.Trim().ToLowerInvariant();
+                            if ((rawCat == "lainnya" || rawCat == "other" || rawCat == "others") &&
+                                (it.Name?.Trim().ToLowerInvariant().Contains("steak") == true))
+                            {
+                                rawCat = "food";
+                            }
+                            var cat = rawCat switch
+                            {
+                                "food" => "food",
+                                "makanan" => "food",
+                                "steak" => "food",
+                                "drink" => "drink",
+                                "minuman" => "drink",
+                                "dessert" => "dessert",
+                                "snack" => "jajanan",
+                                "cemilan" => "jajanan",
+                                "camilan" => "jajanan",
+                                "jajanan" => "jajanan",
+                                "dimsum" => "jajanan",
+                                _ => rawCat
+                            };
+                            var catLabel = cat switch
+                            {
+                                "food" => "Makanan",
+                                "drink" => "Minuman",
+                                "dessert" => "Pencuci Mulut",
+                                "jajanan" => "Jajanan",
+                                _ => "Lainnya"
+                            };
+                            var img = ResolveMenuImage(it.ImageUrl, it.Category);
+                            var menuDesc = BuildMenuDescription(it.Name, it.Description);
+                            <article class="menu-card-2"
+                                     data-id="@it.MenuItemId"
+                                     data-name="@it.Name"
+                                     data-cat="@cat"
+                                     data-price="@it.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                     data-img="@img">
+                                <div class="menu-image">
+                                    <img src="@img" alt="@it.Name" loading="lazy" />
+                                </div>
+                                <div class="menu-body">
+                                    <div class="menu-chip">@catLabel</div>
+                                    <div class="menu-title">@it.Name</div>
+                                    <div class="menu-desc">@menuDesc</div>
+                                    <div class="menu-footer">
+                                        <div class="menu-price">Rp @String.Format(System.Globalization.CultureInfo.GetCultureInfo("id-ID"), "{0:N0}", it.Price)</div>
+                                        <button class="btn btn-add" type="button">Tambah</button>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <aside class="cart-pane @(cartOnly ? "" : "d-none")">
+            <div class="cart-header">
+                <div>
+                    <h3>Keranjang</h3>
+                    <div class="cart-sub">Maksimal 1 note per item.</div>
+                </div>
+                <button class="btn btn-clear" id="clearCartBtn" type="button">Kosongkan</button>
+            </div>
+
+            <div class="cart-empty" id="cartEmpty">
+                <div class="empty-icon">CART</div>
+                <div>Keranjang kosong</div>
+                <small>Tambahkan menu dari daftar di kiri.</small>
+            </div>
+
+            <div class="cart-list" id="cartList"></div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <strong id="cartSubtotal">Rp 0</strong>
+                </div>
+                <div class="summary-row d-none" id="cartDiscountRow">
+                    <span id="cartDiscountLabel">Diskon Member</span>
+                    <strong id="cartDiscount">Rp 0</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Service (5%)</span>
+                    <strong id="cartService">Rp 0</strong>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <strong id="cartTotal">Rp 0</strong>
+                </div>
+            </div>
+
+            <div class="payment-box">
+                <div class="mt-1 d-grid gap-2">
+                    <label class="payment-option active" id="dineInOption">
+                        <input type="radio" name="orderType" value="dinein" class="form-check-input me-2" checked />
+                        <span><strong>Makan di sini</strong><br /><small>Nikmati pesanan langsung di meja.</small></span>
+                    </label>
+                    <label class="payment-option" id="takeAwayOption">
+                        <input type="radio" name="orderType" value="takeaway" class="form-check-input me-2" />
+                        <span><strong>Bawa pulang</strong><br /><small>Pesanan dipacking untuk dibawa.</small></span>
+                    </label>
+                </div>
+                <div class="payment-head">
+                    <h4>Pembayaran</h4>
+                    <span class="badge-soft small" id="paymentQrisOnlyBadge">QRIS Only</span>
+                </div>
+                <div class="payment-option active" id="qrisOption">
+                    <div class="payment-icon">QR</div>
+                    <div>
+                        <div class="payment-title">QRIS</div>
+                        <small>Scan untuk bayar dengan QRIS</small>
+                    </div>
+                    <div class="payment-check"><i class="bi bi-check2"></i></div>
+                </div>
+                <div class="mt-2 d-grid gap-2">
+                    <label class="payment-option" id="cashOption">
+                        <input type="radio" name="paymentMethod" value="kasir" class="form-check-input me-2" />
+                        <span><strong>Bayar Cash di Kasir</strong><br /><small>Pembayaran tunai (cash) langsung ke kasir dengan nomor meja / kode order.</small></span>
+                    </label>
+                    <label class="payment-option active" id="qrisOnlineOption">
+                        <input type="radio" name="paymentMethod" value="qris" class="form-check-input me-2" checked />
+                        <span><strong>Bayar QRIS Online</strong><br /><small>Scan QRIS dan konfirmasi pembayaran di web.</small></span>
+                    </label>
+                </div>
+                <div class="payment-qr" id="paymentQrisHint">
+                    <div class="qr-text">Klik <strong>Bayar</strong> untuk menampilkan QRIS sesuai total tagihan.</div>
+                </div>
+                <button class="btn btn-pay" id="payBtn" type="button">Bayar</button>
+            </div>
+        </aside>
+    </div>
+</section>
+@if (!cartOnly)
+{
+    <div class="customer-cart-sticky d-none" id="menuCartSticky">
+        <div class="customer-cart-sticky-inner">
+            <div>
+                <div class="customer-cart-sticky-count" id="menuCartStickyCount">0 item</div>
+                <div class="customer-cart-sticky-total" id="menuCartStickyTotal">Rp 0</div>
+            </div>
+            <a class="btn btn-gold btn-sm" href="/keranjang">Lihat Keranjang</a>
+        </div>
+    </div>
+}
+
+<div class="modal fade qris-modal" id="customerPaymentModal" tabindex="-1" aria-labelledby="customerPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content qris-modal-content">
+            <div class="modal-header border-0 pb-1">
+                <h5 class="modal-title" id="customerPaymentModalLabel">Pembayaran QRIS Customer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <div class="small text-white-50 mb-2">
+                    <div id="customerPaymentOrderLabel">Order -</div>
+                    <div id="customerPaymentTableLabel">Meja -</div>
+                    <div id="customerPaymentTotalLabel">Total Order -</div>
+                    <div id="customerPaymentFeeLabel">Biaya QRIS -</div>
+                    <div id="customerPaymentPayableLabel">Total Bayar -</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <span class="badge text-bg-secondary" id="customerPaymentStatusBadge">status: -</span>
+                    <span class="small text-white-50" id="customerPaymentInvoiceText">Invoice: -</span>
+                    <span class="small text-warning" id="customerPaymentTimerText">Sisa waktu: -</span>
+                </div>
+                <div class="text-center">
+                    <img id="customerPaymentQrImage" class="qris-image d-none" alt="QRIS Customer" />
+                    <div id="customerPaymentQrFallback" class="qris-help">QR belum tersedia.</div>
+                </div>
+                <div class="qris-help mt-2" id="customerPaymentItems">Item: -</div>
+                <div class="qris-help" id="customerPaymentMessageText">Menunggu data pembayaran.</div>
+            </div>
+            <div class="modal-footer border-0">
+                <a id="customerOpenCheckoutBtn" class="btn btn-outline-info btn-sm d-none" target="_blank" rel="noopener noreferrer">Buka Halaman Bayar</a>
+                <button class="btn btn-outline-light btn-sm" type="button" id="customerRefreshPaymentBtn">Saya Sudah Bayar</button>
+                <button class="btn btn-gold btn-sm" type="button" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade payment-success-modal" id="paymentSuccessModal" tabindex="-1" aria-labelledby="paymentSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content payment-success-content">
+            <div class="modal-body payment-success-body">
+                <div class="text-center mb-2">
+                <div class="pay-success-check"><i class="bi bi-check2-circle"></i></div>
+                <h5 class="mt-2 mb-1" id="paymentSuccessModalLabel">Pembayaran Berhasil</h5>
+                <p class="text-light-emphasis mb-2">Terima kasih, pesanan kamu sedang diproses.</p>
+                <div class="pay-success-meta" id="paymentSuccessMeta">Meja -</div>
+                </div>
+                <div class="receipt-card mt-3">
+                    <div class="small text-white-50 mb-1" id="receiptInfoTop">Order -</div>
+                    <div class="small text-white-50 mb-2" id="receiptInfoBottom">Invoice -</div>
+                    <div class="table-responsive receipt-table-wrap">
+                        <table class="table table-dark table-sm align-middle mb-2 receipt-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Harga</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receiptItemsBody">
+                                <tr><td colspan="4" class="text-center text-white-50">Belum ada data item.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small receipt-summary">
+                        <div class="d-flex justify-content-between"><span>Subtotal</span><strong id="receiptSubtotal">Rp 0</strong></div>
+                        <div class="d-flex justify-content-between"><span>Diskon</span><strong id="receiptDiscount">Rp 0</strong></div>
+                        <div class="d-flex justify-content-between"><span>Service</span><strong id="receiptService">Rp 0</strong></div>
+                        <div class="d-flex justify-content-between receipt-total"><span>Total</span><strong id="receiptGrandTotal">Rp 0</strong></div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-gold w-100" data-bs-dismiss="modal">Oke</button>
+                    <a href="/pesanan-saya" class="btn btn-outline-light w-100">Lihat Pesanan Saya</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const formatRupiah = (value) => {
+            const numeric = Number(value);
+            const safe = Number.isFinite(numeric) ? numeric : 0;
+            try {
+                return new Intl.NumberFormat('id-ID').format(safe);
+            } catch (err) {
+                return safe.toLocaleString('id-ID');
+            }
+        };
+
+        const toSafeInt = (value, fallback = 0) => {
+            const n = Number.parseInt(String(value ?? ''), 10);
+            return Number.isFinite(n) ? n : fallback;
+        };
+
+        const toSafeQty = (value) => {
+            const n = toSafeInt(value, 1);
+            return n > 0 ? n : 1;
+        };
+
+        const parsePrice = (raw) => {
+            if (raw === null || raw === undefined) return 0;
+            let text = String(raw).trim();
+            if (!text) return 0;
+
+            text = text.replace(/[^\d,.-]/g, '');
+            if (!text) return 0;
+
+            if (text.includes(',') && text.includes('.')) {
+                if (text.lastIndexOf(',') > text.lastIndexOf('.')) {
+                    text = text.replace(/\./g, '').replace(',', '.');
+                } else {
+                    text = text.replace(/,/g, '');
+                }
+            } else if (text.includes(',')) {
+                text = text.replace(',', '.');
+            }
+
+            const parsed = Number.parseFloat(text);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+
+        const cart = new Map();
+        const cartList = document.getElementById('cartList');
+        const cartEmpty = document.getElementById('cartEmpty');
+        const cartSubtotal = document.getElementById('cartSubtotal');
+        const cartService = document.getElementById('cartService');
+        const cartTotal = document.getElementById('cartTotal');
+        const cartDiscountRow = document.getElementById('cartDiscountRow');
+        const cartDiscount = document.getElementById('cartDiscount');
+        const cartDiscountLabel = document.getElementById('cartDiscountLabel');
+        const payBtn = document.getElementById('payBtn');
+        const customerPaymentModalEl = document.getElementById('customerPaymentModal');
+        const customerPaymentModal = customerPaymentModalEl ? bootstrap.Modal.getOrCreateInstance(customerPaymentModalEl) : null;
+        const customerPaymentOrderLabel = document.getElementById('customerPaymentOrderLabel');
+        const customerPaymentTableLabel = document.getElementById('customerPaymentTableLabel');
+        const customerPaymentTotalLabel = document.getElementById('customerPaymentTotalLabel');
+        const customerPaymentFeeLabel = document.getElementById('customerPaymentFeeLabel');
+        const customerPaymentPayableLabel = document.getElementById('customerPaymentPayableLabel');
+        const customerPaymentStatusBadge = document.getElementById('customerPaymentStatusBadge');
+        const customerPaymentInvoiceText = document.getElementById('customerPaymentInvoiceText');
+        const customerPaymentTimerText = document.getElementById('customerPaymentTimerText');
+        const customerPaymentQrImage = document.getElementById('customerPaymentQrImage');
+        const customerPaymentQrFallback = document.getElementById('customerPaymentQrFallback');
+        const customerPaymentMessageText = document.getElementById('customerPaymentMessageText');
+        const customerPaymentItems = document.getElementById('customerPaymentItems');
+        const customerOpenCheckoutBtn = document.getElementById('customerOpenCheckoutBtn');
+        const customerRefreshPaymentBtn = document.getElementById('customerRefreshPaymentBtn');
+        const paymentMethodInputs = Array.from(document.querySelectorAll('input[name="paymentMethod"]'));
+        const paymentQrisOnlyBadge = document.getElementById('paymentQrisOnlyBadge');
+        const qrisOption = document.getElementById('qrisOption');
+        const qrisOnlineOption = document.getElementById('qrisOnlineOption');
+        const cashOption = document.getElementById('cashOption');
+        const paymentQrisHint = document.getElementById('paymentQrisHint');
+        const orderTypeInputs = Array.from(document.querySelectorAll('input[name="orderType"]'));
+        const menuCartSticky = document.getElementById('menuCartSticky');
+        const menuCartStickyCount = document.getElementById('menuCartStickyCount');
+        const menuCartStickyTotal = document.getElementById('menuCartStickyTotal');
+
+        let activeCustomerOrderId = 0;
+        let activeCustomerInvoice = "";
+        let activeCustomerTableNumber = 0;
+        let activeCustomerTotal = 0;
+        let activeCustomerPaymentUrl = "";
+        let activeCustomerQrString = "";
+        let activeCustomerQrImageUrl = "";
+        let activeCustomerGatewayFee = 0;
+        let activeCustomerPayableTotal = 0;
+        let activeCustomerOrderItems = [];
+        let customerPaymentPollTimer = null;
+        let customerPaymentCountdownTimer = null;
+        let customerPaymentDeadlineAt = null;
+        let pendingReceipt = null;
+        const customerOrdersStorageKey = 'nr_customer_orders_v1';
+        const customerCartStorageKey = 'nr_customer_cart_v1';
+
+        const saveOrderToLocalHistory = (tableNumber, orderId) => {
+            const t = Number.parseInt(String(tableNumber || '0'), 10);
+            const o = Number.parseInt(String(orderId || '0'), 10);
+            if (!t || !o) return;
+            try {
+                const raw = localStorage.getItem(customerOrdersStorageKey);
+                const parsed = raw ? JSON.parse(raw) : {};
+                const key = String(t);
+                const list = Array.isArray(parsed[key]) ? parsed[key] : [];
+                if (!list.includes(o)) {
+                    list.unshift(o);
+                }
+                parsed[key] = list.slice(0, 100);
+                localStorage.setItem(customerOrdersStorageKey, JSON.stringify(parsed));
+            } catch (_e) {
+            }
+        };
+
+        const saveCartToStorage = () => {
+            try {
+                const rows = Array.from(cart.values()).map(item => ({
+                    id: String(item.id || ''),
+                    name: String(item.name || 'Menu'),
+                    price: Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+                    img: String(item.img || ''),
+                    qty: toSafeQty(item.qty),
+                    note: String(item.note || '')
+                }));
+                localStorage.setItem(customerCartStorageKey, JSON.stringify(rows));
+            } catch (_e) {
+            }
+        };
+
+        const loadCartFromStorage = () => {
+            try {
+                const raw = localStorage.getItem(customerCartStorageKey);
+                const rows = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(rows)) return;
+                rows.forEach((item) => {
+                    const id = String(item?.id || '').trim();
+                    if (!id) return;
+                    cart.set(id, {
+                        id,
+                        name: String(item?.name || 'Menu'),
+                        price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
+                        img: String(item?.img || ''),
+                        qty: toSafeQty(item?.qty),
+                        note: String(item?.note || '')
+                    });
+                });
+            } catch (_e) {
+            }
+        };
+
+        const updateMenuCartSticky = () => {
+            if (!menuCartSticky || !menuCartStickyCount || !menuCartStickyTotal) return;
+            let totalQty = 0;
+            let total = 0;
+            cart.forEach((item) => {
+                const qty = toSafeQty(item.qty);
+                const price = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
+                totalQty += qty;
+                total += qty * price;
+            });
+            if (totalQty <= 0) {
+                menuCartSticky.classList.add('d-none');
+                return;
+            }
+            menuCartSticky.classList.remove('d-none');
+            menuCartStickyCount.textContent = `${totalQty} item`;
+            menuCartStickyTotal.textContent = `Rp ${formatRupiah(total)}`;
+        };
+
+        const updateTotals = () => {
+            let subtotal = 0;
+            let totalQty = 0;
+            cart.forEach(item => {
+                const safePrice = Number.isFinite(item.price) ? item.price : 0;
+                const safeQty = toSafeQty(item.qty);
+                subtotal += safePrice * safeQty;
+                totalQty += safeQty;
+            });
+            const isMember = (document.body?.dataset.member === "true") || document.getElementById('membershipMember')?.checked;
+            let discountRate = 0;
+            if (isMember && subtotal > 0) {
+                if (totalQty >= 6) {
+                    discountRate = 0.20;
+                } else if (totalQty >= 3) {
+                    discountRate = 0.15;
+                } else {
+                    discountRate = 0.10;
+                }
+            }
+            const discount = Math.round(subtotal * discountRate);
+            const service = Math.round((subtotal - discount) * 0.05);
+            const total = subtotal - discount + service;
+            cartSubtotal.textContent = `Rp ${formatRupiah(subtotal)}`;
+            if (discountRate > 0) {
+                cartDiscountRow.classList.remove('d-none');
+                if (cartDiscountLabel) {
+                    cartDiscountLabel.textContent = `Diskon Member (${Math.round(discountRate * 100)}%)`;
+                }
+                cartDiscount.textContent = `- Rp ${formatRupiah(discount)}`;
+            } else {
+                cartDiscountRow.classList.add('d-none');
+                cartDiscount.textContent = 'Rp 0';
+            }
+            cartService.textContent = `Rp ${formatRupiah(service)}`;
+            cartTotal.textContent = `Rp ${formatRupiah(total)}`;
+        };
+
+        const toggleEmpty = () => {
+            const isEmpty = cart.size === 0;
+            cartEmpty.classList.toggle('d-none', !isEmpty);
+            cartList.classList.toggle('d-none', isEmpty);
+        };
+
+            const renderCart = () => {
+            cartList.innerHTML = '';
+            cart.forEach(item => {
+                const safePrice = Number.isFinite(item.price) ? item.price : 0;
+                const safeQty = toSafeQty(item.qty);
+                const row = document.createElement('div');
+                row.className = 'cart-item';
+                row.innerHTML = `
+                    <div class="cart-thumb" style="background-image:url('${item.img}');"></div>
+                    <div class="cart-info">
+                        <div class="cart-title">${item.name}</div>
+                        <div class="cart-price">Rp ${formatRupiah(safePrice)}</div>
+                        <input class="cart-note" type="text" placeholder="Note (optional)" value="${item.note || ''}" data-id="${item.id}" />
+                    </div>
+                    <div class="cart-actions">
+                        <button class="qty-btn" data-action="minus" data-id="${item.id}">-</button>
+                        <span class="qty-value">${safeQty}</span>
+                        <button class="qty-btn" data-action="plus" data-id="${item.id}">+</button>
+                    </div>
+                `;
+                cartList.appendChild(row);
+            });
+            toggleEmpty();
+            updateTotals();
+            saveCartToStorage();
+            updateMenuCartSticky();
+        };
+
+        const addToCart = (data) => {
+            const safeId = String(data.id ?? '');
+            if (!safeId) return;
+            const safeName = String(data.name ?? '').trim() || 'Menu';
+            const safePrice = Number.isFinite(data.price) ? data.price : 0;
+            const safeImg = String(data.img ?? '').trim();
+            if (cart.has(safeId)) {
+                const current = cart.get(safeId);
+                current.qty = toSafeQty(current.qty) + 1;
+                if (!Number.isFinite(current.price)) {
+                    current.price = safePrice;
+                }
+            } else {
+                cart.set(safeId, { id: safeId, name: safeName, price: safePrice, img: safeImg, qty: 1, note: '' });
+            }
+            renderCart();
+        };
+
+        document.querySelectorAll('.btn-add').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.currentTarget.closest('.menu-card-2');
+                if (!card) return;
+                addToCart({
+                    id: card.dataset.id,
+                    name: card.dataset.name,
+                    price: parsePrice(card.dataset.price),
+                    img: card.dataset.img
+                });
+            });
+        });
+
+        cartList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.qty-btn');
+            if (!btn) return;
+            const id = btn.dataset.id;
+            const item = cart.get(id);
+            if (!item) return;
+
+            if (btn.dataset.action === 'minus') {
+                item.qty = toSafeQty(item.qty) - 1;
+                if (item.qty <= 0) {
+                    cart.delete(id);
+                }
+            } else {
+                item.qty = toSafeQty(item.qty) + 1;
+            }
+            renderCart();
+        });
+
+        cartList.addEventListener('input', (e) => {
+            if (!e.target.classList.contains('cart-note')) return;
+            const id = e.target.dataset.id;
+            const item = cart.get(id);
+            if (!item) return;
+            item.note = e.target.value;
+        });
+
+        document.getElementById('clearCartBtn')?.addEventListener('click', () => {
+            cart.clear();
+            renderCart();
+        });
+
+        const normalizeStatus = (status) => String(status || '').trim().toLowerCase();
+        const paymentBadgeClass = (status) => {
+            const key = normalizeStatus(status);
+            if (key === 'paid' || key === 'lunas') return 'text-bg-success';
+            if (key === 'pending') return 'text-bg-warning';
+            if (key === 'expired' || key === 'cancelled' || key === 'canceled') return 'text-bg-danger';
+            return 'text-bg-secondary';
+        };
+
+        const buildQrImageUrl = (qrString) =>
+            `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(qrString || '')}`;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const showPaymentSuccess = (tableNumber, totalText, receipt, options = {}) => {
+            const successModalEl = document.getElementById('paymentSuccessModal');
+            const successTitle = document.getElementById('paymentSuccessModalLabel');
+            const successDescription = successModalEl?.querySelector('.payment-success-body .text-light-emphasis');
+            const successMeta = document.getElementById('paymentSuccessMeta');
+            const receiptInfoTop = document.getElementById('receiptInfoTop');
+            const receiptInfoBottom = document.getElementById('receiptInfoBottom');
+            const receiptItemsBody = document.getElementById('receiptItemsBody');
+            const receiptSubtotal = document.getElementById('receiptSubtotal');
+            const receiptDiscount = document.getElementById('receiptDiscount');
+            const receiptService = document.getElementById('receiptService');
+            const receiptGrandTotal = document.getElementById('receiptGrandTotal');
+            const isCashier = options.mode === 'kasir';
+            const orderCode = options.orderCode ? String(options.orderCode).trim() : '';
+            const orderTypeLabel = options.orderTypeLabel ? String(options.orderTypeLabel).trim() : '';
+            if (successTitle) {
+                successTitle.textContent = isCashier ? 'Pesanan Berhasil Dibuat' : 'Pembayaran Berhasil';
+            }
+            if (successDescription) {
+                successDescription.textContent = isCashier
+                    ? 'Tunjukkan struk ini ke kasir untuk lanjut pembayaran.'
+                    : 'Terima kasih, pesanan kamu sedang diproses.';
+            }
+            if (successMeta) {
+                const rows = Array.isArray(receipt?.items) ? receipt.items : [];
+                const lines = rows.slice(0, 6).map(item => {
+                    const qty = toSafeQty(item?.qty);
+                    const name = escapeHtml(item?.name || 'Item');
+                    const lineTotal = (Number(item?.price) || 0) * qty;
+                    return `${qty}x ${name} (Rp ${formatRupiah(lineTotal)})`;
+                });
+                const itemHtml = lines.length > 0
+                    ? `<div class="small mt-2 text-start">${lines.join('<br/>')}</div>`
+                    : '';
+                const metaMain = isCashier
+                    ? `Meja ${tableNumber} | ${orderTypeLabel || 'Makan di sini'}`
+                    : `Meja ${tableNumber} | Total ${totalText || 'Rp 0'}`;
+                const codeHtml = isCashier && orderCode
+                    ? `<div class="small mt-1 text-warning">Kode Order: <strong>${escapeHtml(orderCode)}</strong></div>`
+                    : '';
+                successMeta.innerHTML = `${metaMain}${codeHtml}${itemHtml}`;
+            }
+            if (receiptInfoTop) {
+                receiptInfoTop.textContent = `Order #${receipt?.orderId || '-'} | Meja ${receipt?.tableNumber || '-'}`;
+            }
+            if (receiptInfoBottom) {
+                receiptInfoBottom.textContent = isCashier
+                    ? `Kode Order: ${orderCode || receipt?.invoice || '-'} | Menunggu pembayaran di kasir`
+                    : `Invoice: ${receipt?.invoice || '-'} | Dibayar: ${new Date().toLocaleString('id-ID')}`;
+            }
+            if (receiptItemsBody) {
+                const rows = Array.isArray(receipt?.items) ? receipt.items : [];
+                if (rows.length === 0) {
+                    receiptItemsBody.innerHTML = '<tr><td colspan="4" class="text-center text-white-50">Belum ada data item.</td></tr>';
+                } else {
+                    receiptItemsBody.innerHTML = rows.map(item => {
+                        const name = escapeHtml(item?.name || 'Item');
+                        const qty = toSafeQty(item?.qty);
+                        const price = Number.isFinite(Number(item?.price)) ? Number(item.price) : 0;
+                        const line = price * qty;
+                        return `<tr>
+                            <td>${name}</td>
+                            <td class="text-center">${qty}</td>
+                            <td class="text-end">Rp ${formatRupiah(price)}</td>
+                            <td class="text-end">Rp ${formatRupiah(line)}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+            if (receiptSubtotal) receiptSubtotal.textContent = `Rp ${formatRupiah(receipt?.subtotal || 0)}`;
+            if (receiptDiscount) receiptDiscount.textContent = `Rp ${formatRupiah(receipt?.discount || 0)}`;
+            if (receiptService) receiptService.textContent = `Rp ${formatRupiah(receipt?.service || 0)}`;
+            if (receiptGrandTotal) receiptGrandTotal.textContent = `Rp ${formatRupiah(receipt?.payableTotal || receipt?.total || 0)}`;
+            if (successModalEl) {
+                bootstrap.Modal.getOrCreateInstance(successModalEl).show();
+            }
+        };
+
+        const stopCustomerPaymentPolling = () => {
+            if (customerPaymentPollTimer) {
+                clearInterval(customerPaymentPollTimer);
+                customerPaymentPollTimer = null;
+            }
+            if (customerPaymentCountdownTimer) {
+                clearInterval(customerPaymentCountdownTimer);
+                customerPaymentCountdownTimer = null;
+            }
+        };
+
+        const formatCountdown = (ms) => {
+            const totalSec = Math.max(0, Math.floor(ms / 1000));
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        };
+
+        const updatePaymentTimer = () => {
+            if (!customerPaymentTimerText) return;
+            if (!customerPaymentDeadlineAt) {
+                customerPaymentTimerText.textContent = 'Sisa waktu: -';
+                return;
+            }
+            const left = customerPaymentDeadlineAt - Date.now();
+            if (left <= 0) {
+                customerPaymentTimerText.textContent = 'Sisa waktu: 00:00';
+                return;
+            }
+            customerPaymentTimerText.textContent = `Sisa waktu: ${formatCountdown(left)}`;
+        };
+
+        const startCustomerPaymentPolling = () => {
+            stopCustomerPaymentPolling();
+            if (!activeCustomerOrderId) return;
+            customerPaymentPollTimer = setInterval(() => {
+                if (!activeCustomerOrderId) return;
+                if (customerRefreshPaymentBtn && customerRefreshPaymentBtn.disabled) return;
+                refreshCustomerPaymentStatus({ silent: true });
+            }, 5000);
+        };
+
+        const renderCustomerPaymentResult = ({ orderId, tableNumber, total, gatewayFee, payableTotal, items, invoice, status, paymentUrl, qrString, qrImageUrl, message }) => {
+            const nextOrderId = Number(orderId || 0);
+            if (nextOrderId > 0 && nextOrderId !== activeCustomerOrderId) {
+                activeCustomerPaymentUrl = "";
+                activeCustomerQrString = "";
+                activeCustomerQrImageUrl = "";
+            }
+
+            activeCustomerOrderId = nextOrderId;
+            activeCustomerInvoice = String(invoice || '').trim();
+            const nextTable = Number.parseInt(String(tableNumber || '0'), 10);
+            const nextTotal = Number.parseFloat(String(total || '0'));
+            if (nextTable > 0) activeCustomerTableNumber = nextTable;
+            if (Number.isFinite(nextTotal) && nextTotal >= 0) activeCustomerTotal = nextTotal;
+            const nextFee = Number.parseFloat(String(gatewayFee || '0'));
+            const nextPayable = Number.parseFloat(String(payableTotal || '0'));
+            if (Number.isFinite(nextFee) && nextFee >= 0) activeCustomerGatewayFee = nextFee;
+            if (Number.isFinite(nextPayable) && nextPayable >= 0) activeCustomerPayableTotal = nextPayable;
+            if (typeof paymentUrl === 'string' && paymentUrl.trim()) activeCustomerPaymentUrl = paymentUrl.trim();
+            if (typeof qrString === 'string' && qrString.trim()) activeCustomerQrString = qrString.trim();
+            if (typeof qrImageUrl === 'string' && qrImageUrl.trim()) activeCustomerQrImageUrl = qrImageUrl.trim();
+            if (Array.isArray(items) && items.length > 0) activeCustomerOrderItems = items;
+
+            if (customerPaymentOrderLabel) customerPaymentOrderLabel.textContent = `Order #${activeCustomerOrderId || '-'}`;
+            if (customerPaymentTableLabel) customerPaymentTableLabel.textContent = `Meja ${activeCustomerTableNumber || '-'}`;
+            if (customerPaymentTotalLabel) customerPaymentTotalLabel.textContent = `Total Order Rp ${formatRupiah(activeCustomerTotal || 0)}`;
+            if (customerPaymentFeeLabel) customerPaymentFeeLabel.textContent = `Biaya QRIS Rp ${formatRupiah(activeCustomerGatewayFee || 0)}`;
+            if (customerPaymentPayableLabel) customerPaymentPayableLabel.textContent = `Total Bayar Rp ${formatRupiah(activeCustomerPayableTotal || activeCustomerTotal || 0)}`;
+            if (customerPaymentInvoiceText) customerPaymentInvoiceText.textContent = `Invoice: ${activeCustomerInvoice || '-'}`;
+
+            if (customerPaymentStatusBadge) {
+                customerPaymentStatusBadge.className = `badge ${paymentBadgeClass(status)}`;
+                customerPaymentStatusBadge.textContent = `status: ${status || '-'}`;
+            }
+            if (customerPaymentMessageText) {
+                customerPaymentMessageText.textContent = message || 'Silakan scan QRIS untuk lanjut pembayaran.';
+            }
+            if (customerPaymentItems) {
+                if (!Array.isArray(activeCustomerOrderItems) || activeCustomerOrderItems.length === 0) {
+                    customerPaymentItems.textContent = 'Item: -';
+                } else {
+                    const max = activeCustomerOrderItems.slice(0, 5).map(it => `${toSafeQty(it.qty)}x ${it.name || 'Item'}`).join(', ');
+                    customerPaymentItems.textContent = `Item: ${max}${activeCustomerOrderItems.length > 5 ? ', ...' : ''}`;
+                }
+            }
+
+            if (customerOpenCheckoutBtn) {
+                const finalPaymentUrl = activeCustomerPaymentUrl;
+                if (finalPaymentUrl) {
+                    customerOpenCheckoutBtn.href = finalPaymentUrl;
+                    customerOpenCheckoutBtn.classList.remove('d-none');
+                } else {
+                    customerOpenCheckoutBtn.removeAttribute('href');
+                    customerOpenCheckoutBtn.classList.add('d-none');
+                }
+            }
+
+            const finalQrImage = activeCustomerQrImageUrl || (activeCustomerQrString ? buildQrImageUrl(activeCustomerQrString) : '');
+            if (customerPaymentQrImage && customerPaymentQrFallback) {
+                if (finalQrImage) {
+                    customerPaymentQrImage.src = finalQrImage;
+                    customerPaymentQrImage.classList.remove('d-none');
+                    customerPaymentQrFallback.classList.add('d-none');
+                } else {
+                    customerPaymentQrImage.removeAttribute('src');
+                    customerPaymentQrImage.classList.add('d-none');
+                    customerPaymentQrFallback.classList.remove('d-none');
+                }
+            }
+
+            customerPaymentModal?.show();
+        };
+
+        const getSelectedPaymentMethod = () => {
+            const checked = paymentMethodInputs.find(x => x.checked);
+            const value = String(checked?.value || 'qris').trim().toLowerCase();
+            return value === 'kasir' ? 'kasir' : 'qris';
+        };
+
+        const getSelectedOrderType = () => {
+            const checked = orderTypeInputs.find(x => x.checked);
+            const value = String(checked?.value || 'dinein').trim().toLowerCase();
+            return value === 'takeaway' ? 'takeaway' : 'dinein';
+        };
+
+        const syncOrderTypeUi = () => {
+            const selected = getSelectedOrderType();
+            document.getElementById('dineInOption')?.classList.toggle('active', selected === 'dinein');
+            document.getElementById('takeAwayOption')?.classList.toggle('active', selected === 'takeaway');
+        };
+
+        const syncPaymentMethodUi = () => {
+            const selected = getSelectedPaymentMethod();
+            const isQris = selected === 'qris';
+
+            qrisOption?.classList.toggle('active', isQris);
+            qrisOption?.classList.toggle('d-none', !isQris);
+            qrisOnlineOption?.classList.toggle('active', isQris);
+            cashOption?.classList.toggle('active', !isQris);
+            paymentQrisHint?.classList.toggle('d-none', !isQris);
+            paymentQrisOnlyBadge?.classList.toggle('d-none', !isQris);
+        };
+
+        const createCustomerOrder = async (tableNumber, isMember, paymentMethod, orderType) => {
+            const payload = {
+                tableNumber,
+                isMember,
+                paymentMethod,
+                orderType,
+                items: Array.from(cart.values()).map(item => ({
+                    menuId: item.id,
+                    name: item.name,
+                    price: Number.isFinite(item.price) ? item.price : 0,
+                    quantity: toSafeQty(item.qty),
+                    notes: item.note || ''
+                }))
+            };
+
+            const res = await fetch('/api/customer/orders/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data || !data.success) {
+                throw new Error((data && data.error) || 'Gagal membuat order customer.');
+            }
+            return data;
+        };
+
+        const createCustomerPayment = async (orderId, tableNumber, total) => {
+            const callbackUrl = `${window.location.origin}/api/payments/gateway/callback`;
+            const redirectUrl = window.location.href;
+            const payload = {
+                customerName: `Customer Meja ${tableNumber}`,
+                callbackUrl,
+                redirectUrl,
+                paymentMethod: 'qris',
+                useQrisConverter: true
+            };
+
+            const res = await fetch(`/api/payments/customer/orders/${orderId}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!data) {
+                throw new Error('Respons payment kosong.');
+            }
+            if (!res.ok && !data.invoice && !data.qrString && !data.qrImageUrl && !data.paymentUrl) {
+                throw new Error(data.error || data.message || 'Gagal membuat payment QRIS customer.');
+            }
+
+            renderCustomerPaymentResult({
+                orderId,
+                tableNumber,
+                total,
+                invoice: data.invoice,
+                gatewayFee: data.gatewayFee,
+                payableTotal: data.payableTotal,
+                items: pendingReceipt?.items || [],
+                status: data.status,
+                paymentUrl: data.paymentUrl,
+                qrString: data.qrString,
+                qrImageUrl: data.qrImageUrl,
+                message: data.message || 'Silakan scan QRIS untuk bayar.'
+            });
+            customerPaymentDeadlineAt = Date.now() + (15 * 60 * 1000);
+            updatePaymentTimer();
+            if (customerPaymentCountdownTimer) clearInterval(customerPaymentCountdownTimer);
+            customerPaymentCountdownTimer = setInterval(updatePaymentTimer, 1000);
+        };
+
+        const refreshCustomerPaymentStatus = async (options = {}) => {
+            const silent = !!options.silent;
+            if (!activeCustomerOrderId) {
+                if (!silent) {
+                    window.alert('Belum ada order payment aktif.');
+                }
+                return;
+            }
+
+            if (customerRefreshPaymentBtn) customerRefreshPaymentBtn.disabled = true;
+            try {
+                const res = await fetch(`/api/payments/customer/orders/${activeCustomerOrderId}/refresh`, { cache: 'no-store' });
+                const data = await res.json();
+                if (!data) {
+                    if (!silent) {
+                        window.alert('Gagal cek status payment.');
+                    }
+                    return;
+                }
+
+                const hasUsablePaymentData = !!(data.invoice || data.status || data.qrString || data.qrImageUrl || data.paymentUrl);
+                if (!res.ok && !hasUsablePaymentData) {
+                    if (!silent) {
+                        window.alert((data && data.error) || 'Gagal cek status payment.');
+                    }
+                    return;
+                }
+
+                renderCustomerPaymentResult({
+                    orderId: activeCustomerOrderId,
+                    tableNumber: activeCustomerTableNumber,
+                    total: activeCustomerTotal,
+                    invoice: data.invoice || activeCustomerInvoice,
+                    gatewayFee: data.gatewayFee,
+                    payableTotal: data.payableTotal,
+                    items: pendingReceipt?.items || activeCustomerOrderItems || [],
+                    status: data.status,
+                    paymentUrl: data.paymentUrl,
+                    qrString: data.qrString,
+                    qrImageUrl: data.qrImageUrl,
+                    message: data.message || (res.ok ? 'Silakan scan QRIS untuk lanjut pembayaran.' : 'Status gateway sedang bermasalah, data QR terakhir tetap ditampilkan.')
+                });
+
+                if (['paid', 'lunas'].includes(normalizeStatus(data.status))) {
+                    stopCustomerPaymentPolling();
+                    customerPaymentModal?.hide();
+                    showPaymentSuccess(
+                        activeCustomerTableNumber,
+                        `Rp ${formatRupiah(activeCustomerPayableTotal || activeCustomerTotal || 0)}`,
+                        {
+                            ...(pendingReceipt || {}),
+                            tableNumber: activeCustomerTableNumber || pendingReceipt?.tableNumber || 0,
+                            total: activeCustomerTotal || pendingReceipt?.total || 0,
+                            gatewayFee: activeCustomerGatewayFee || 0,
+                            payableTotal: activeCustomerPayableTotal || activeCustomerTotal || pendingReceipt?.total || 0,
+                            orderId: activeCustomerOrderId || pendingReceipt?.orderId || 0,
+                            invoice: data.invoice || activeCustomerInvoice || pendingReceipt?.invoice || '-'
+                        }
+                    );
+                    cart.clear();
+                    renderCart();
+                    pendingReceipt = null;
+                }
+            } catch (_e) {
+                if (!silent) {
+                    window.alert('Tidak bisa menghubungi server payment.');
+                }
+            } finally {
+                if (customerRefreshPaymentBtn) customerRefreshPaymentBtn.disabled = false;
+            }
+        };
+
+        payBtn?.addEventListener('click', async () => {
+            if (cart.size === 0) {
+                window.alert('Keranjang masih kosong.');
+                return;
+            }
+
+            const getCookie = (name) => {
+                const cookie = document.cookie.split(';').map(x => x.trim()).find(x => x.startsWith(name + '='));
+                return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
+            };
+
+            const tableNumber = Number.parseInt(getCookie('nr_tableNumber') || '', 10);
+            if (!tableNumber || tableNumber <= 0) {
+                window.alert('Pilih meja dulu sebelum bayar.');
+                return;
+            }
+
+            const isMember = (document.body?.dataset.member === 'true') || document.getElementById('membershipMember')?.checked;
+            const paymentMethod = getSelectedPaymentMethod();
+            const orderType = getSelectedOrderType();
+            payBtn.disabled = true;
+            payBtn.textContent = 'Memproses...';
+            try {
+                const cartSnapshot = Array.from(cart.values()).map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    qty: toSafeQty(item.qty),
+                    price: Number.isFinite(item.price) ? item.price : 0,
+                    note: item.note || ''
+                }));
+                const orderData = await createCustomerOrder(tableNumber, !!isMember, paymentMethod, orderType);
+                saveOrderToLocalHistory(tableNumber, orderData.orderId);
+                const total = Number.parseFloat(String(orderData.total || '0'));
+                pendingReceipt = {
+                    orderId: orderData.orderId || 0,
+                    tableNumber,
+                    subtotal: Number(orderData.subtotal || 0),
+                    discount: Number(orderData.discount || 0),
+                    service: Number(orderData.service || 0),
+                    total: Number.isFinite(total) ? total : 0,
+                    gatewayFee: 0,
+                    payableTotal: Number.isFinite(total) ? total : 0,
+                    items: cartSnapshot
+                };
+                if (paymentMethod === 'kasir') {
+                    const orderCode = orderData.orderCode || `#${orderData.orderId}`;
+                    const orderTypeLabel = orderType === 'takeaway' ? 'Bawa pulang' : 'Makan di sini';
+                    showPaymentSuccess(
+                        tableNumber,
+                        `Rp ${formatRupiah(Number.isFinite(total) ? total : 0)}`,
+                        {
+                            ...(pendingReceipt || {}),
+                            tableNumber,
+                            orderId: orderData.orderId || pendingReceipt?.orderId || 0,
+                            invoice: orderCode
+                        },
+                        {
+                            mode: 'kasir',
+                            orderCode,
+                            orderTypeLabel
+                        }
+                    );
+                    cart.clear();
+                    renderCart();
+                    pendingReceipt = null;
+                } else {
+                    await createCustomerPayment(orderData.orderId, tableNumber, Number.isFinite(total) ? total : 0);
+                    startCustomerPaymentPolling();
+                }
+            } catch (err) {
+                pendingReceipt = null;
+                window.alert(err?.message || 'Gagal memproses pembayaran customer.');
+            } finally {
+                payBtn.disabled = false;
+                payBtn.textContent = 'Bayar';
+            }
+        });
+
+        customerRefreshPaymentBtn?.addEventListener('click', refreshCustomerPaymentStatus);
+
+        customerPaymentModalEl?.addEventListener('hidden.bs.modal', () => {
+            stopCustomerPaymentPolling();
+        });
+
+        paymentMethodInputs.forEach((input) => {
+            input.addEventListener('change', syncPaymentMethodUi);
+        });
+        syncPaymentMethodUi();
+        orderTypeInputs.forEach((input) => {
+            input.addEventListener('change', syncOrderTypeUi);
+        });
+        syncOrderTypeUi();
+
+        document.querySelectorAll('input[name="membershipStatus"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateTotals();
+            });
+        });
+
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const cat = btn.dataset.cat;
+                document.querySelectorAll('.menu-card-2').forEach(card => {
+                    const match = cat === 'all' || card.dataset.cat === cat;
+                    card.classList.toggle('d-none', !match);
+                });
+            });
+        });
+
+        document.getElementById('heroPickTable')?.addEventListener('click', function () {
+            document.getElementById('pickTableBtn')?.click();
+        });
+
+        const quickCartBtn = document.getElementById('quickCartBtn');
+        const quickNavBtns = Array.from(document.querySelectorAll('#customerQuickNav .quick-nav-btn'));
+        const setQuickNavActive = (key) => {
+            quickNavBtns.forEach((btn) => {
+                const isActive = btn.dataset.nav === key;
+                btn.classList.toggle('is-active', isActive);
+            });
+        };
+        quickCartBtn?.addEventListener('click', () => {
+            setQuickNavActive('cart');
+        });
+
+        loadCartFromStorage();
+        renderCart();
+        updateMenuCartSticky();
+    </script>
+}
+
+

@@ -1,0 +1,298 @@
+﻿@model cafe_yo.Models.KitchenDashboardVm
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Dapur";
+}
+
+<section class="kitchen-board" id="kitchenBoard">
+    <div class="kitchen-head">
+        <div>
+            <div class="kitchen-eyebrow">CafeYo Kitchen Flow</div>
+            <h1 class="kitchen-title">Dapur</h1>
+            <p class="kitchen-sub">Kelola antrian pesanan masuk dan Ubah Status tanpa membuka data harga atau pembayaran.</p>
+        </div>
+        <div class="kitchen-legend">
+            <span class="kitchen-status-pill pending">Menunggu Diproses</span>
+            <span class="kitchen-status-pill processing">Diproses</span>
+            <span class="kitchen-status-pill ready">Siap</span>
+        </div>
+    </div>
+
+    <div class="kitchen-grid">
+        <section class="kitchen-column">
+            <div class="kitchen-column-head">
+            <h2>Antrian Pembayaran Lunas</h2>
+                <span class="kitchen-count" id="pendingCount">@Model.PendingOrders.Count</span>
+            </div>
+            <div id="pendingOrders" class="kitchen-order-list">
+                @if (Model.PendingOrders.Count == 0)
+                {
+                    <div class="kitchen-empty">Belum ada pesanan lunas yang perlu diproses.</div>
+                }
+                else
+                {
+                    foreach (var order in Model.PendingOrders)
+                    {
+                        <partial name="~/Views/Kitchen/_KitchenOrderCard.cshtml" model="order" />
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="kitchen-column">
+            <div class="kitchen-column-head">
+                <h2>Diproses</h2>
+                <span class="kitchen-count" id="processingCount">@Model.ProcessingOrders.Count</span>
+            </div>
+            <div id="processingOrders" class="kitchen-order-list">
+                @if (Model.ProcessingOrders.Count == 0)
+                {
+                    <div class="kitchen-empty">Belum ada pesanan diproses.</div>
+                }
+                else
+                {
+                    foreach (var order in Model.ProcessingOrders)
+                    {
+                        <partial name="~/Views/Kitchen/_KitchenOrderCard.cshtml" model="order" />
+                    }
+                }
+            </div>
+        </section>
+    </div>
+
+    <section class="kitchen-ready-wrap">
+        <div class="kitchen-column-head mb-2">
+            <h2>Siap</h2>
+            <span class="kitchen-count" id="readyCount">@Model.ReadyOrders.Count</span>
+        </div>
+        <div id="readyOrders" class="kitchen-order-list ready">
+            @if (Model.ReadyOrders.Count == 0)
+            {
+                <div class="kitchen-empty">Belum ada pesanan siap.</div>
+            }
+            else
+            {
+                foreach (var order in Model.ReadyOrders)
+                {
+                    <partial name="~/Views/Kitchen/_KitchenOrderCard.cshtml" model="order" />
+                }
+            }
+        </div>
+    </section>
+</section>
+
+<div class="modal fade" id="confirmReadyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content table-modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Tandai Siap?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Pesanan ini akan dipindahkan ke status "Siap".
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn table-modal-reset" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn table-modal-save" id="confirmReadyBtn">Ya, Siap</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const pendingWrap = document.getElementById("pendingOrders");
+            const processingWrap = document.getElementById("processingOrders");
+            const readyWrap = document.getElementById("readyOrders");
+            const pendingCount = document.getElementById("pendingCount");
+            const processingCount = document.getElementById("processingCount");
+            const readyCount = document.getElementById("readyCount");
+            const confirmReadyBtn = document.getElementById("confirmReadyBtn");
+            const confirmReadyModalEl = document.getElementById("confirmReadyModal");
+            const confirmReadyModal = confirmReadyModalEl ? bootstrap.Modal.getOrCreateInstance(confirmReadyModalEl) : null;
+
+            let pendingReadyAction = null;
+            let isPolling = false;
+
+            const toastContainer = document.createElement("div");
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1090";
+            document.body.appendChild(toastContainer);
+
+            const showToast = (title, message, ok) => {
+                const toastEl = document.createElement("div");
+                toastEl.className = "toast align-items-center border-0 text-bg-" + (ok ? "success" : "danger");
+                toastEl.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body"><strong>${title}</strong><div>${message}</div></div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>`;
+                toastContainer.appendChild(toastEl);
+                const toast = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 2500 });
+                toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+                toast.show();
+            };
+
+            const statusLabel = (status) => {
+                if (status === "processing") return "Diproses";
+                if (status === "ready") return "Siap";
+                return "Menunggu Diproses";
+            };
+
+            const renderItemList = (items) => {
+                if (!Array.isArray(items) || items.length === 0) {
+                    return `<li><span class="qty">1x</span><span>Detail item belum tersedia</span></li>`;
+                }
+                return items.map((item) => {
+                    const notes = item.notes ? `<small class="item-note">${item.notes}</small>` : "";
+                    return `<li><span class="qty">${item.quantity || 1}x</span><span>${item.name || "Item"}</span>${notes}</li>`;
+                }).join("");
+            };
+
+            const fmtDate = (iso) => {
+                if (!iso) return "-";
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return "-";
+                return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+            };
+
+            const createActionButton = (status) => {
+                if (status === "pending") {
+                    return `<button class="btn kitchen-action-btn" data-next="processing">Mulai</button>`;
+                }
+                if (status === "processing") {
+                    return `<button class="btn kitchen-action-btn done" data-next="ready">Tandai Siap</button>`;
+                }
+                if (status === "ready") {
+                    return `<button class="btn kitchen-action-btn disabled" disabled>Menunggu Konfirmasi Kasir</button>`;
+                }
+                return `<button class="btn kitchen-action-btn disabled" disabled>Selesai</button>`;
+            };
+
+            const renderCard = (order) => {
+                return `
+                <article class="kitchen-card" data-order-id="${order.orderId}" data-status="${order.status}" data-updated-at="${order.updatedAt}">
+                    <div class="kitchen-card-top">
+                        <div>
+                            <div class="kitchen-order-no">Order #${order.orderId}</div>
+                            <div class="kitchen-meta">Meja ${order.tableNumber || "-"} â€¢ ${fmtDate(order.orderDate)}</div>
+                        </div>
+                        <span class="kitchen-status-pill ${order.status}">${statusLabel(order.status)}</span>
+                    </div>
+                    <ul class="kitchen-items">${renderItemList(order.items)}</ul>
+                    ${order.note ? `<div class="kitchen-note">Catatan: ${order.note}</div>` : ""}
+                    <div class="kitchen-actions">${createActionButton(order.status)}</div>
+                </article>`;
+            };
+
+            const renderOrders = (target, orders) => {
+                if (!target) return;
+                if (!orders.length) {
+                    target.innerHTML = `<div class="kitchen-empty">Tidak ada pesanan.</div>`;
+                    return;
+                }
+                target.innerHTML = orders.map(renderCard).join("");
+            };
+
+            const refreshCounters = (pending, processing, ready) => {
+                if (pendingCount) pendingCount.textContent = String(pending.length);
+                if (processingCount) processingCount.textContent = String(processing.length);
+                if (readyCount) readyCount.textContent = String(ready.length);
+            };
+
+            const loadOrders = async () => {
+                if (isPolling) return;
+                isPolling = true;
+                try {
+                    const res = await fetch("/Kitchen/orders", { cache: "no-store" });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data || !data.success || !Array.isArray(data.orders)) return;
+                    const pending = data.orders.filter(x => x.status === "pending");
+                    const processing = data.orders.filter(x => x.status === "processing");
+                    const ready = data.orders.filter(x => x.status === "ready");
+
+                    renderOrders(pendingWrap, pending);
+                    renderOrders(processingWrap, processing);
+                    renderOrders(readyWrap, ready);
+                    refreshCounters(pending, processing, ready);
+                } catch (_e) {
+                } finally {
+                    isPolling = false;
+                }
+            };
+
+            const setButtonLoading = (btn, loading) => {
+                if (!btn) return;
+                if (loading) {
+                    btn.disabled = true;
+                    btn.dataset.originalText = btn.textContent || "";
+                    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Memproses...`;
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = btn.dataset.originalText || btn.textContent;
+                }
+            };
+
+            const runUpdate = async (card, button, nextStatus) => {
+                const orderId = Number.parseInt(card.dataset.orderId || "0", 10);
+                const updatedAt = card.dataset.updatedAt || null;
+                if (!orderId) return;
+
+                setButtonLoading(button, true);
+                try {
+                    const res = await fetch(`/Kitchen/orders/${orderId}/status`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: nextStatus, updatedAt })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data || !data.success) {
+                        showToast("Gagal", (data && data.error) || "Status gagal diperbarui.", false);
+                        await loadOrders();
+                        return;
+                    }
+
+                    const okMsg = nextStatus === "ready"
+                        ? "Pesanan ditandai siap."
+                        : "Pesanan dipindahkan ke diproses.";
+                    showToast("Berhasil", okMsg, true);
+                    await loadOrders();
+                } catch (_e) {
+                    showToast("Error", "Gagal menghubungi server.", false);
+                } finally {
+                    setButtonLoading(button, false);
+                }
+            };
+
+            document.getElementById("kitchenBoard")?.addEventListener("click", async (event) => {
+                const btn = event.target.closest(".kitchen-action-btn");
+                if (!btn || btn.disabled) return;
+
+                const card = btn.closest(".kitchen-card");
+                if (!card) return;
+
+                const nextStatus = btn.dataset.next || "";
+                if (nextStatus === "ready" && confirmReadyModal && confirmReadyBtn) {
+                    pendingReadyAction = { card, btn, nextStatus };
+                    confirmReadyModal.show();
+                    return;
+                }
+
+                await runUpdate(card, btn, nextStatus);
+            });
+
+            confirmReadyBtn?.addEventListener("click", async () => {
+                if (!pendingReadyAction) return;
+                confirmReadyModal?.hide();
+                const action = pendingReadyAction;
+                pendingReadyAction = null;
+                await runUpdate(action.card, action.btn, action.nextStatus);
+            });
+
+            loadOrders();
+            window.setInterval(loadOrders, 4000);
+        });
+    </script>
+}

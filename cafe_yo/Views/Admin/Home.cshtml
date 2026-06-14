@@ -1,0 +1,23 @@
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<section class="kitchen-board">
+    <div class="kitchen-head">
+        <div>
+            <div class="kitchen-eyebrow">CafeYo System Management</div>
+            <h1 class="kitchen-title">Admin Dashboard</h1>
+            <p class="kitchen-sub">Kelola menu, kategori, meja, user staff, dan konfigurasi sistem.</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Menu"><div class="kitchen-column h-100"><h2 class="h6 mb-2">Menu</h2><div class="text-white-50">CRUD menu produk.</div></div></a></div>
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Category"><div class="kitchen-column h-100"><h2 class="h6 mb-2">Category</h2><div class="text-white-50">CRUD kategori menu.</div></div></a></div>
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Tables"><div class="kitchen-column h-100"><h2 class="h6 mb-2">Meja</h2><div class="text-white-50">Kelola data meja.</div></div></a></div>
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Users"><div class="kitchen-column h-100"><h2 class="h6 mb-2">User Staff</h2><div class="text-white-50">Kelola role dan staff.</div></div></a></div>
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Settings"><div class="kitchen-column h-100"><h2 class="h6 mb-2">Settings</h2><div class="text-white-50">QRIS, pajak, service charge.</div></div></a></div>
+        <div class="col-md-4"><a class="text-decoration-none" href="/Admin/Orders"><div class="kitchen-column h-100"><h2 class="h6 mb-2">Orders</h2><div class="text-white-50">Monitor data transaksi.</div></div></a></div>
+    </div>
+</section>

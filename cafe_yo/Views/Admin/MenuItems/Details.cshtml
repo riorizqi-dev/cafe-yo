@@ -1,0 +1,46 @@
+﻿@model cafe_yo.Models.MenuItem
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Menu Item Details";
+}
+
+<h1 class="h4 mb-3">Menu Item Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">ID</dt>
+    <dd class="col-sm-9">@Model.MenuItemId</dd>
+
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.Name</dd>
+
+    <dt class="col-sm-3">Category</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Category) ? Model.Category : "-")</dd>
+
+    <dt class="col-sm-3">Image</dt>
+    <dd class="col-sm-9">
+        @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
+        {
+            <span>-</span>
+        }
+        else
+        {
+            <div class="mb-2"><code>@Model.ImageUrl</code></div>
+            <img src="@Model.ImageUrl" alt="@Model.Name" class="img-thumbnail" style="max-width:220px; border-radius:10px;"
+                 onerror="this.onerror=null;this.src='/images/menu/nasi-goreng.jpg';" />
+        }
+    </dd>
+
+    <dt class="col-sm-3">Price</dt>
+    <dd class="col-sm-9">@Model.Price.ToString("C0", new System.Globalization.CultureInfo("id-ID"))</dd>
+
+    <dt class="col-sm-3">Stock</dt>
+    <dd class="col-sm-9">@Model.Stock</dd>
+
+    <dt class="col-sm-3">Available</dt>
+    <dd class="col-sm-9">@((Model.IsAvailable.HasValue) ? (Model.IsAvailable.Value ? "Yes" : "No") : "-")</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/Admin/MenuItems">Kembali</a>
+    <a class="btn btn-outline-primary" href="/Admin/MenuItems/Edit/@Model.MenuItemId">Edit</a>
+</div>

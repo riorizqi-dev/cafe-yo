@@ -1,0 +1,23 @@
+﻿@model cafe_yo.Models.CafeTable
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Table Details";
+}
+
+<h1 class="h4 mb-3">Table Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">ID</dt>
+    <dd class="col-sm-9">@Model.TableId</dd>
+
+    <dt class="col-sm-3">Table Number</dt>
+    <dd class="col-sm-9">@Model.TableNumber</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Status) ? Model.Status : "-")</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/Admin/Tables">Kembali</a>
+    <a class="btn btn-outline-primary" href="/Admin/Tables/Edit/@Model.TableId">Edit</a>
+</div>

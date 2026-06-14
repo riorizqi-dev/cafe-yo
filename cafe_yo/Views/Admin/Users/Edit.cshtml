@@ -1,0 +1,74 @@
+﻿@model cafe_yo.Models.User
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Edit User";
+}
+
+<h3>Edit User</h3>
+
+<form method="post" action="/Users/Edit">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input name="Username" class="form-control" value="@Model?.Username" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Full Name</label>
+        <input name="FullName" class="form-control" value="@Model?.FullName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Role</label>
+        <select name="Role" class="form-select">
+            @if (Model.Role == "admin")
+            {
+                <option value="admin" selected>admin</option>
+            }
+            else
+            {
+                <option value="admin">admin</option>
+            }
+
+            @if (Model.Role == "supervisor")
+            {
+                <option value="supervisor" selected>supervisor</option>
+            }
+            else
+            {
+                <option value="supervisor">supervisor</option>
+            }
+
+            @if (Model.Role == "kasir")
+            {
+                <option value="kasir" selected>kasir</option>
+            }
+            else
+            {
+                <option value="kasir">kasir</option>
+            }
+
+            @if (Model.Role == "owner")
+            {
+                <option value="owner" selected>owner</option>
+            }
+            else
+            {
+                <option value="owner">owner</option>
+            }
+
+            @if (Model.Role == "customer")
+            {
+                <option value="customer" selected>customer</option>
+            }
+            else
+            {
+                <option value="customer">customer</option>
+            }
+        </select>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="/Admin/Users">Batal</a>
+    </div>
+</form>

@@ -1,0 +1,49 @@
+﻿@model List<cafe_yo.Models.AdminOrderRow>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Orders";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Orders</h1>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Table</th>
+                <th>Tanggal Pesanan</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted">Belum ada pesanan.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var order in Model)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@(order.TableNumber.HasValue ? $"#{order.TableNumber.Value}" : "-")</td>
+                    <td>@(order.OrderDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                    <td>@(string.IsNullOrWhiteSpace(order.Status) ? "-" : order.Status)</td>
+                    <td>@((order.Total.HasValue) ? order.Total.Value.ToString("C0", new System.Globalization.CultureInfo("id-ID")) : "-")</td>
+                    <td class="text-end">
+                        <a class="btn btn-outline-secondary btn-sm" href="/Admin/Orders/@order.OrderId">Details</a>
+                        <a class="btn btn-outline-primary btn-sm" href="/Admin/Orders/Edit/@order.OrderId">Ubah Status</a>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,75 @@
+@model cafe_yo.Models.AdminDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="text-center mb-3">
+    <hr class="decor" />
+    <h1 class="display-5">Dashboard</h1>
+    <div class="text-muted">Admin Panel</div>
+    <hr class="decor" />
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card card-admin mb-4">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Manajemen User & Role</h5>
+                <a class="btn btn-sm btn-gold" href="/Admin/Users">Kelola User</a>
+            </div>
+            <div class="card-body p-3">
+                <div class="table-responsive">
+                <table class="table table-dark table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Users != null && Model.Users.Count > 0)
+                        {
+                            var i = 1;
+                            foreach (var u in Model.Users)
+                            {
+                                <tr>
+                                    <td>@i</td>
+                                    <td>@u.FullName</td>
+                                    <td>@u.Username</td>
+                                    <td>@u.Role</td>
+                                    <td>
+                                        @if (u.IsOnline)
+                                        {
+                                            <span class="badge bg-success">Online</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Offline</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a class="btn btn-sm btn-warning" href="/Admin/Users/@u.Id/Roles">Edit Roles</a>
+                                        <a class="btn btn-sm btn-info" href="/Admin/Users">Manage</a>
+                                    </td>
+                                </tr>
+                                i++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center">No users</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

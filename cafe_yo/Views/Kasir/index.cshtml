@@ -1,0 +1,256 @@
+﻿@model cafe_yo.Models.KasirDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Stasiun Panggil Kasir";
+}
+
+<section class="kasir-station">
+    <div class="kasir-head">
+        <div>
+            <div class="kasir-eyebrow">Layanan Langsung CafeYo</div>
+            <h1 class="kasir-title">Stasiun Panggil Kasir</h1>
+            <p class="kasir-sub">Masukkan pesanan pelanggan di sini. Pesanan akan langsung masuk ke dashboard dapur secara real-time.</p>
+        </div>
+        <div class="kasir-stat-chip">
+            <i class="bi bi-broadcast-pin"></i>
+            <span><strong id="kasirCallCounter">0</strong> panggilan dikirim sesi ini</span>
+        </div>
+    </div>
+
+    <div class="kasir-section-nav" id="kasirSectionNav" role="tablist" aria-label="Fitur Kasir">
+        <button class="btn kasir-nav-btn is-active" type="button" data-kasir-tab="order">Masukkan Pesanan</button>
+        <button class="btn kasir-nav-btn" type="button" data-kasir-tab="notif">Notifikasi Dapur</button>
+        <button class="btn kasir-nav-btn" type="button" data-kasir-tab="payment">Pembayaran</button>
+        <button class="btn kasir-nav-btn" type="button" data-kasir-tab="table">Status Meja</button>
+    </div>
+
+    <div class="kasir-panels">
+        <section class="kasir-panel is-active" data-kasir-panel="order">
+            <div class="kitchen-column mb-3">
+                <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center mb-2">
+                    <h2 class="h5 m-0">Masukkan Pesanan Pelanggan</h2>
+                    <small class="text-white-50">Alur: Kasir masukkan -> Dapur terima (Menunggu Diproses)</small>
+                </div>
+
+                @if (Model.MenuItems.Count == 0)
+                {
+                    <div class="alert alert-warning mb-0">Menu belum tersedia. Tambahkan menu dulu dari halaman Admin Menu.</div>
+                }
+                else
+                {
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-3">
+                            <label class="form-label mb-1">Meja</label>
+                            <select class="form-select" id="orderTableNumber">
+                                @foreach (var table in Model.Tables.OrderBy(t => t.TableNumber))
+                                {
+                                    <option value="@table.TableNumber">Meja @table.TableNumber (@table.Status)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label mb-1">Catatan Pesanan (Opsional)</label>
+                            <input class="form-control" id="orderNote" maxlength="250" placeholder="Contoh: tanpa bawang, pedas sedang." />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Metode Pembayaran</label>
+                            <select class="form-select" id="orderPaymentMethod">
+                                <option value="kasir">Bayar di Kasir (langsung)</option>
+                                <option value="qris">QRIS Daring</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="kasirMenuPicker" class="menu-grid kasir-menu-grid mb-3"></div>
+                    <div id="orderItemsWrap" class="d-grid gap-2 mb-2"></div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-gold btn-sm" type="button" id="submitOrderBtn">
+                            <i class="bi bi-send-check me-1"></i>Kirim ke Dapur
+                        </button>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="kasir-panel" data-kasir-panel="notif">
+            <div class="kasir-notif">
+                <div class="bell">
+                    <i class="bi bi-bell-fill"></i>
+                    <span>Notifikasi Dapur</span>
+                    <span class="kitchen-count" id="kitchenNotifCount">0</span>
+                </div>
+                <div class="kasir-notif-list" id="kitchenNotifList">
+                    <span class="text-white-50 small">Belum ada notifikasi siap.</span>
+                </div>
+            </div>
+            <div class="kasir-toolbar mt-3">
+                <div class="kasir-quick-message">
+                    <label for="globalCallMessage" class="form-label">Template Pesan</label>
+                    <input id="globalCallMessage"
+                           class="form-control"
+                           maxlength="200"
+                           placeholder="Contoh: Pesanan siap, silakan ambil di meja Anda."
+                           value="Pesanan Anda sudah siap. Silakan ke meja {table}." />
+                </div>
+                <div class="kasir-hint-box">
+                    <div class="kasir-hint-title">Tips</div>
+                    <div class="kasir-hint-copy">Gunakan <code>{table}</code> untuk otomatis isi nomor meja.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="kasir-panel" data-kasir-panel="payment">
+            <div class="kitchen-column mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h2 class="h5 m-0">Pesanan Menunggu Pembayaran</h2>
+                    <div class="d-flex gap-2">
+                        <select id="paymentMethodFilter" class="form-select form-select-sm">
+                            <option value="">Semua Metode</option>
+                            <option value="kasir">Tunai (Kasir)</option>
+                            <option value="qris">QRIS Daring</option>
+                        </select>
+                        <button class="btn btn-outline-light btn-sm" type="button" id="refreshPendingPaymentsBtn">Muat Ulang</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Kode Pesanan</th>
+                                <th>Meja</th>
+                                <th>Metode</th>
+                                <th>Status Bayar</th>
+                                <th class="text-end">Total</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingPaymentsBody">
+                            <tr><td colspan="6" class="text-center text-white-50">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="kasir-panel" data-kasir-panel="table">
+            <div class="kasir-grid">
+                @if (Model.Tables.Count == 0)
+                {
+                    <div class="alert alert-warning">Belum ada data meja.</div>
+                }
+                else
+                {
+                    foreach (var table in Model.Tables)
+                    {
+                        <article class="kasir-card" data-table="@table.TableNumber" data-status="@table.Status">
+                            <div class="kasir-card-top">
+                                <div class="kasir-table-label">Meja @table.TableNumber</div>
+                                <span class="kasir-status">@table.Status</span>
+                            </div>
+                            <div class="kasir-status-actions">
+                                <button class="btn kasir-state-btn" type="button" data-table="@table.TableNumber" data-status="Kosong">Kosong</button>
+                                <button class="btn kasir-state-btn" type="button" data-table="@table.TableNumber" data-status="Booking">Dipesan</button>
+                                <button class="btn kasir-state-btn" type="button" data-table="@table.TableNumber" data-status="Isi">Isi</button>
+                            </div>
+                            <button class="btn kasir-call-btn" type="button" data-table="@table.TableNumber">
+                                <i class="bi bi-megaphone"></i>
+                                <span>Panggil Meja</span>
+                            </button>
+                            <button class="btn btn-outline-success btn-sm kasir-complete-btn mt-2" type="button" data-table="@table.TableNumber">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                <span>Selesaikan + Kosongkan</span>
+                            </button>
+                        </article>
+                    }
+                }
+            </div>
+        </section>
+    </div>
+</section>
+
+<div class="modal fade" id="orderPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content qris-modal-content">
+            <div class="modal-header border-0 pb-1">
+                <h5 class="modal-title">Pembayaran QRIS</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <div class="small text-white-50 mb-2">
+                    <div id="paymentOrderLabel">Pesanan -</div>
+                    <div id="paymentTableLabel">Meja -</div>
+                    <div id="paymentTotalLabel">Total Pesanan -</div>
+                    <div id="paymentFeeLabel">Biaya QRIS -</div>
+                    <div id="paymentPayableLabel">Total Bayar -</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <span class="badge text-bg-secondary" id="paymentStatusBadge">Status: -</span>
+                    <span class="small text-white-50" id="paymentInvoiceText">Kode Pembayaran: -</span>
+                    <button class="btn btn-sm btn-outline-light" type="button" id="copyInvoiceBtn">Salin Kode</button>
+                </div>
+                <div class="text-center">
+                    <img id="paymentQrImage" class="qris-image d-none" alt="Kode QRIS" />
+                    <div id="paymentQrFallback" class="qris-help">QR belum tersedia.</div>
+                </div>
+                <div class="qris-help" id="paymentMessageText">Menunggu data pembayaran.</div>
+            </div>
+            <div class="modal-footer border-0">
+                <a id="openCheckoutBtn" class="btn btn-outline-info btn-sm d-none" target="_blank" rel="noopener noreferrer">Buka Halaman Bayar</a>
+                <button class="btn btn-outline-light btn-sm" type="button" id="refreshPaymentBtn">Muat Ulang Status</button>
+                <button class="btn btn-gold btn-sm" type="button" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="kasirReceiptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Detail Pembayaran / Struk</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="kasirReceiptContent"></div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button class="btn btn-outline-light btn-sm" type="button" id="printReceiptBtn">
+                    <i class="bi bi-printer me-1"></i>Cetak Struk
+                </button>
+                <button class="btn btn-gold btn-sm" type="button" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="completeTableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Konfirmasi Selesaikan Meja</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Aksi ini akan menyelesaikan semua order aktif dan mengosongkan meja.</p>
+                <div class="small text-white-50" id="completeTableModalMessage">Meja -</div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button class="btn btn-outline-light btn-sm" type="button" data-bs-dismiss="modal">Batal</button>
+                <button class="btn btn-success btn-sm" type="button" id="confirmCompleteTableBtn">Ya, Selesaikan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="kasirMenuOptionsJson" type="application/json">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    Model.MenuItems.Select(m => new { id = m.MenuItemId, name = m.Name, price = m.Price, available = m.IsAvailable, imageUrl = m.ImageUrl, category = m.Category, description = m.Description }))
+    .Replace("</", "<\\/"))
+</script>
+
+@section Scripts {
+    <script src="~/js/kasir-page.js" asp-append-version="true"></script>
+}
+

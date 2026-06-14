@@ -1,0 +1,81 @@
+@model List<cafe_yo.Models.AdminUserListItem>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Users Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Manajemen User Staff</h1>
+    <a class="btn btn-primary btn-sm" href="/Admin/Users/Create">Tambah Staff</a>
+</div>
+
+@if (TempData["UserError"] != null)
+{
+    <div class="alert alert-danger">@TempData["UserError"]</div>
+}
+@if (TempData["UserSuccess"] != null)
+{
+    <div class="alert alert-success">@TempData["UserSuccess"]</div>
+}
+
+<div class="table-responsive">
+    <table class="table table-dark table-striped align-middle">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th class="text-end">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr>
+                <td colspan="6" class="text-center text-white-50">Belum ada user.</td>
+            </tr>
+        }
+        else
+        {
+            var no = 1;
+            foreach (var user in Model)
+            {
+                <tr>
+                    <td>@no</td>
+                    <td>@(string.IsNullOrWhiteSpace(user.FullName) ? "-" : user.FullName)</td>
+                    <td>@user.UserName</td>
+                    <td>@(string.IsNullOrWhiteSpace(user.Roles) ? "-" : user.Roles)</td>
+                    <td>
+                        @if (user.IsLockedOut)
+                        {
+                            <span class="badge bg-danger">Locked</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-warning" href="/Admin/Users/@user.Id/Roles">Edit</a>
+                        <form method="post" action="/Admin/Users/@user.Id/Reset" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-success" type="submit">Reset</button>
+                        </form>
+                        <form method="post" action="/Admin/Users/@user.Id/Toggle" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-info" type="submit">Toggle</button>
+                        </form>
+                        <form method="post" action="/Admin/Users/@user.Id/Delete" class="d-inline" onsubmit="return confirm('Delete user ini?');">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                no++;
+            }
+        }
+        </tbody>
+    </table>
+</div>

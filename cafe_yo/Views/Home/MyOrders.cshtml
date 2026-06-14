@@ -1,0 +1,416 @@
+@{
+    ViewData["Title"] = "Pesanan Saya";
+}
+
+<section class="customer-dashboard py-4 py-lg-5">
+    <div class="dashboard-header mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <div class="badge-soft">Customer</div>
+            <h1 class="dashboard-title mb-1">Pesanan Saya</h1>
+            <p class="dashboard-sub mb-0">Pantau status pesanan kamu secara real-time.</p>
+        </div>
+        <div class="d-flex gap-2" id="customerQuickNav">
+            <a class="btn btn-outline-light btn-sm quick-nav-btn" data-nav="menu" href="/menu">Menu</a>
+            <a class="btn btn-outline-light btn-sm quick-nav-btn is-active" data-nav="orders" href="/pesanan-saya">Pesanan Saya</a>
+            <button class="btn btn-outline-light btn-sm" id="refreshOrdersBtn" type="button">Refresh</button>
+        </div>
+    </div>
+
+    <div id="myOrdersWrap" class="d-grid gap-3">
+        <div class="kitchen-column text-center text-white-50">Memuat pesanan...</div>
+    </div>
+</section>
+
+<div class="modal fade payment-success-modal" id="myOrderReceiptModal" tabindex="-1" aria-labelledby="myOrderReceiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content payment-success-content">
+            <div class="modal-body payment-success-body">
+                <div class="text-center mb-2">
+                    <div class="pay-success-check"><i class="bi bi-receipt"></i></div>
+                    <h5 class="mt-2 mb-1" id="myOrderReceiptModalLabel">Detail Struk Pesanan</h5>
+                    <p class="text-light-emphasis mb-2">Tunjukkan ini ke kasir jika diminta.</p>
+                    <div class="pay-success-meta" id="myOrderReceiptMeta">Order -</div>
+                </div>
+                <div class="receipt-card mt-3">
+                    <div class="small text-white-50 mb-1" id="myOrderReceiptInfoTop">Order -</div>
+                    <div class="small text-white-50 mb-2" id="myOrderReceiptInfoBottom">Status -</div>
+                    <div class="table-responsive receipt-table-wrap">
+                        <table class="table table-dark table-sm align-middle mb-2 receipt-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Harga</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myOrderReceiptItemsBody">
+                                <tr><td colspan="4" class="text-center text-white-50">Belum ada data item.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small receipt-summary">
+                        <div class="d-flex justify-content-between receipt-total"><span>Total</span><strong id="myOrderReceiptGrandTotal">Rp 0</strong></div>
+                    </div>
+                    <div class="mt-3" id="myOrderQrisWrap" style="display:none;">
+                        <div class="small text-white-50 mb-2" id="myOrderQrisHint">QRIS tersedia. Scan untuk bayar.</div>
+                        <div class="text-center">
+                            <img id="myOrderQrisImage" class="qris-image d-none" alt="QRIS Pesanan" />
+                            <div id="myOrderQrisFallback" class="qris-help">QR belum tersedia.</div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2 justify-content-center">
+                            <a id="myOrderQrisOpenCheckoutBtn" class="btn btn-outline-info btn-sm d-none" target="_blank" rel="noopener noreferrer">Buka Halaman Bayar</a>
+                            <button class="btn btn-outline-light btn-sm" id="myOrderQrisRefreshBtn" type="button">Saya Sudah Bayar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-gold w-100" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const wrap = document.getElementById("myOrdersWrap");
+            const refreshBtn = document.getElementById("refreshOrdersBtn");
+            const receiptModalEl = document.getElementById("myOrderReceiptModal");
+            const receiptModal = receiptModalEl ? bootstrap.Modal.getOrCreateInstance(receiptModalEl) : null;
+            const receiptMeta = document.getElementById("myOrderReceiptMeta");
+            const receiptInfoTop = document.getElementById("myOrderReceiptInfoTop");
+            const receiptInfoBottom = document.getElementById("myOrderReceiptInfoBottom");
+            const receiptItemsBody = document.getElementById("myOrderReceiptItemsBody");
+            const receiptGrandTotal = document.getElementById("myOrderReceiptGrandTotal");
+            const qrisWrap = document.getElementById("myOrderQrisWrap");
+            const qrisHint = document.getElementById("myOrderQrisHint");
+            const qrisImage = document.getElementById("myOrderQrisImage");
+            const qrisFallback = document.getElementById("myOrderQrisFallback");
+            const qrisOpenCheckoutBtn = document.getElementById("myOrderQrisOpenCheckoutBtn");
+            const qrisRefreshBtn = document.getElementById("myOrderQrisRefreshBtn");
+            const key = "nr_customer_orders_v1";
+            let activeReceiptOrderId = 0;
+
+            const readCookie = (name) => {
+                const cookie = document.cookie.split(";").map(x => x.trim()).find(x => x.startsWith(name + "="));
+                return cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : "";
+            };
+
+            const tableNumber = Number.parseInt(readCookie("nr_tableNumber") || "", 10) || 0;
+
+            const readLocalOrders = () => {
+                try {
+                    const raw = localStorage.getItem(key);
+                    const parsed = raw ? JSON.parse(raw) : {};
+                    const list = Array.isArray(parsed[String(tableNumber)]) ? parsed[String(tableNumber)] : [];
+                    return list.map(x => Number(x)).filter(x => Number.isInteger(x) && x > 0).slice(0, 100);
+                } catch (_e) {
+                    return [];
+                }
+            };
+
+            const fmtMoney = (n) => {
+                try {
+                    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(n || 0));
+                } catch (_e) {
+                    return "Rp " + String(n || 0);
+                }
+            };
+
+            const fmtTime = (iso) => {
+                if (!iso) return "-";
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return "-";
+                return d.toLocaleString("id-ID", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+            };
+
+            const statusLabel = (status) => {
+                const m = {
+                    menunggu_pembayaran: "Menunggu pembayaran",
+                    diproses: "Sedang dimasak",
+                    siap: "Siap disajikan",
+                    selesai: "Selesai",
+                    dibatalkan: "Dibatalkan"
+                };
+                return m[status] || status || "-";
+            };
+
+            const statusBadge = (status) => {
+                if (status === "selesai") return "text-bg-success";
+                if (status === "siap") return "text-bg-info";
+                if (status === "diproses") return "text-bg-warning";
+                if (status === "dibatalkan") return "text-bg-danger";
+                return "text-bg-secondary";
+            };
+
+            const methodLabel = (method) => {
+                const m = String(method || "").trim().toLowerCase();
+                if (m === "kasir") return "Cash/Tunai (Kasir)";
+                if (m === "qris") return "QRIS Online";
+                return method || "-";
+            };
+
+            const normalizePaymentStatus = (status) => String(status || "").trim().toLowerCase();
+
+            const buildQrImageUrl = (qrString) =>
+                `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(qrString || "")}`;
+
+            const hideQrisSection = () => {
+                if (qrisWrap) qrisWrap.style.display = "none";
+                if (qrisImage) {
+                    qrisImage.classList.add("d-none");
+                    qrisImage.removeAttribute("src");
+                }
+                if (qrisFallback) qrisFallback.classList.remove("d-none");
+                if (qrisOpenCheckoutBtn) {
+                    qrisOpenCheckoutBtn.classList.add("d-none");
+                    qrisOpenCheckoutBtn.removeAttribute("href");
+                }
+            };
+
+            const showQrisSection = ({ qrImageUrl, qrString, paymentUrl, status, message }) => {
+                if (qrisWrap) qrisWrap.style.display = "";
+                if (qrisHint) {
+                    qrisHint.textContent = message || (normalizePaymentStatus(status) === "lunas" ? "Pembayaran QRIS sudah lunas." : "QRIS tersedia. Scan untuk bayar.");
+                }
+                const finalQr = (qrImageUrl || "").trim() || ((qrString || "").trim() ? buildQrImageUrl(qrString) : "");
+                if (qrisImage && qrisFallback) {
+                    if (finalQr) {
+                        qrisImage.src = finalQr;
+                        qrisImage.classList.remove("d-none");
+                        qrisFallback.classList.add("d-none");
+                    } else {
+                        qrisImage.classList.add("d-none");
+                        qrisFallback.classList.remove("d-none");
+                    }
+                }
+                if (qrisOpenCheckoutBtn) {
+                    if (paymentUrl && String(paymentUrl).trim()) {
+                        qrisOpenCheckoutBtn.href = String(paymentUrl).trim();
+                        qrisOpenCheckoutBtn.classList.remove("d-none");
+                    } else {
+                        qrisOpenCheckoutBtn.classList.add("d-none");
+                        qrisOpenCheckoutBtn.removeAttribute("href");
+                    }
+                }
+            };
+
+            const refreshOrderQris = async (orderId) => {
+                if (!orderId || orderId <= 0) return null;
+                try {
+                    const res = await fetch(`/api/payments/customer/orders/${orderId}/refresh`, { cache: "no-store" });
+                    const data = await res.json();
+                    if (!res.ok || !data) return null;
+                    return data;
+                } catch (_e) {
+                    return null;
+                }
+            };
+
+            const stepIndex = (orderStatus, paymentStatus) => {
+                if (orderStatus === "dibatalkan") return 0;
+                if (orderStatus === "selesai") return 4;
+                if (orderStatus === "siap") return 3;
+                if (orderStatus === "diproses") return 2;
+                if (paymentStatus === "lunas") return 1;
+                return 0;
+            };
+
+            const stepper = (orderStatus, paymentStatus) => {
+                const steps = ["Pesanan Dibuat", "Pembayaran Berhasil", "Sedang Dimasak", "Siap Disajikan", "Selesai"];
+                const idx = stepIndex(orderStatus, paymentStatus);
+                return `<div class="d-flex flex-wrap gap-2 mt-2">${steps.map((s, i) => `<span class="badge ${i <= idx ? "text-bg-success" : "text-bg-dark"}">${i + 1}. ${s}</span>`).join("")}</div>`;
+            };
+
+            const renderEmpty = () => {
+                wrap.innerHTML = `<div class="kitchen-column text-center">
+                    <h3 class="h5 mb-2">Belum ada pesanan.</h3>
+                    <p class="text-white-50 mb-3">Silakan pilih menu terlebih dahulu.</p>
+                    <a href="/menu" class="btn btn-gold btn-sm">Buka Menu</a>
+                </div>`;
+            };
+
+            const escapeHtml = (value) => String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+
+            const showReceipt = (order) => {
+                if (!order || !receiptModal) return;
+                activeReceiptOrderId = Number(order.orderId || 0);
+                const items = Array.isArray(order.items) ? order.items : [];
+                if (receiptMeta) {
+                    const statusText = order.paymentMethod === "kasir"
+                        ? "Menunggu pembayaran cash di kasir"
+                        : (order.paymentStatus === "lunas" ? "Pembayaran lunas" : "Menunggu pembayaran");
+                    receiptMeta.textContent = `Meja ${order.tableNumber || "-"} | ${statusText}`;
+                }
+                if (receiptInfoTop) {
+                    receiptInfoTop.textContent = `Order ${order.orderCode || ("#" + order.orderId)} | Meja ${order.tableNumber || "-"}`;
+                }
+                if (receiptInfoBottom) {
+                    receiptInfoBottom.textContent = `Waktu: ${fmtTime(order.orderTime)} | Metode: ${methodLabel(order.paymentMethod)}`;
+                }
+                if (receiptItemsBody) {
+                    if (!items.length) {
+                        receiptItemsBody.innerHTML = '<tr><td colspan="4" class="text-center text-white-50">Belum ada data item.</td></tr>';
+                    } else {
+                        receiptItemsBody.innerHTML = items.map(i => {
+                            const qty = Number.parseInt(String(i?.quantity || "1"), 10) || 1;
+                            const name = escapeHtml(i?.name || "Item");
+                            const price = Number(i?.unitPrice || 0);
+                            const line = qty * (Number.isFinite(price) ? price : 0);
+                            const notes = String(i?.notes || "").trim();
+                            const noteHtml = notes ? `<div class="small text-white-50">${escapeHtml(notes)}</div>` : "";
+                            return `<tr>
+                                <td>${name}${noteHtml}</td>
+                                <td class="text-center">${qty}</td>
+                                <td class="text-end">${fmtMoney(price)}</td>
+                                <td class="text-end">${fmtMoney(line)}</td>
+                            </tr>`;
+                        }).join("");
+                    }
+                }
+                if (receiptGrandTotal) {
+                    receiptGrandTotal.textContent = fmtMoney(order.total || 0);
+                }
+                if (String(order.paymentMethod || "").toLowerCase() !== "qris" || String(order.paymentStatus || "").toLowerCase() === "lunas") {
+                    hideQrisSection();
+                } else {
+                    showQrisSection({
+                        qrString: order.qrString,
+                        paymentUrl: order.paymentUrl,
+                        status: order.paymentStatus,
+                        message: "Memuat QRIS..."
+                    });
+                    refreshOrderQris(activeReceiptOrderId).then((data) => {
+                        if (!data) {
+                            showQrisSection({ status: order.paymentStatus, message: "QRIS belum tersedia. Coba lagi sebentar." });
+                            return;
+                        }
+                        const status = normalizePaymentStatus(data.status || order.paymentStatus);
+                        if (status === "lunas" || status === "paid") {
+                            hideQrisSection();
+                            if (receiptMeta) {
+                                receiptMeta.textContent = `Meja ${order.tableNumber || "-"} | Pembayaran lunas`;
+                            }
+                        } else {
+                            showQrisSection({
+                                qrImageUrl: data.qrImageUrl,
+                                qrString: data.qrString,
+                                paymentUrl: data.paymentUrl,
+                                status,
+                                message: data.message || "Scan QRIS untuk lanjut pembayaran."
+                            });
+                        }
+                    });
+                }
+                receiptModal.show();
+            };
+
+            const renderOrders = (orders) => {
+                if (!Array.isArray(orders) || orders.length === 0) {
+                    renderEmpty();
+                    return;
+                }
+                wrap.innerHTML = orders.map(o => `
+                    <article class="kitchen-column">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="h6 mb-1">${o.orderCode || ("#" + o.orderId)}</div>
+                                <div class="small text-white-50">Meja ${o.tableNumber || "-"} - ${fmtTime(o.orderTime)}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge ${statusBadge(o.orderStatus)}">${statusLabel(o.orderStatus)}</span><br/>
+                                <span class="badge ${o.paymentStatus === "lunas" ? "text-bg-success" : "text-bg-secondary"} mt-1">${o.paymentStatus === "lunas" ? "Lunas" : "Belum Lunas"}</span>
+                            </div>
+                        </div>
+                        <div class="small mt-2">
+                            ${(o.items || []).map(i => `<div>${i.quantity || 1}x ${i.name || "Item"}</div>`).join("") || "<div>-</div>"}
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 small">
+                            <span>Metode: ${methodLabel(o.paymentMethod)}</span>
+                            <strong>${fmtMoney(o.total || 0)}</strong>
+                        </div>
+                        <div class="d-grid mt-2">
+                            <button type="button" class="btn btn-outline-light btn-sm js-open-receipt" data-order-id="${o.orderId}">Detail Struk</button>
+                        </div>
+                        ${stepper(o.orderStatus, o.paymentStatus)}
+                    </article>
+                `).join("");
+            };
+
+            const loadOrders = async () => {
+                if (!tableNumber) {
+                    renderEmpty();
+                    return;
+                }
+                const orderIds = readLocalOrders();
+                if (!orderIds.length) {
+                    renderEmpty();
+                    return;
+                }
+                try {
+                    const res = await fetch("/api/customer/orders/mine", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tableNumber, orderIds })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data?.success) {
+                        renderEmpty();
+                        return;
+                    }
+                    const orders = Array.isArray(data.orders) ? data.orders : [];
+                    renderOrders(orders);
+                    wrap.querySelectorAll(".js-open-receipt").forEach((btn) => {
+                        btn.addEventListener("click", () => {
+                            const oid = Number.parseInt(String(btn.dataset.orderId || "0"), 10) || 0;
+                            const selected = orders.find(x => Number(x.orderId) === oid);
+                            if (selected) {
+                                showReceipt(selected);
+                            }
+                        });
+                    });
+                } catch (_e) {
+                    renderEmpty();
+                }
+            };
+
+            refreshBtn?.addEventListener("click", loadOrders);
+            qrisRefreshBtn?.addEventListener("click", async () => {
+                if (!activeReceiptOrderId) return;
+                qrisRefreshBtn.disabled = true;
+                try {
+                    const data = await refreshOrderQris(activeReceiptOrderId);
+                    if (!data) return;
+                    const status = normalizePaymentStatus(data.status);
+                    if (status === "lunas" || status === "paid") {
+                        hideQrisSection();
+                        if (receiptMeta) {
+                            const parts = String(receiptMeta.textContent || "").split("|");
+                            const mejaPart = (parts[0] || "").trim();
+                            receiptMeta.textContent = `${mejaPart} | Pembayaran lunas`;
+                        }
+                    } else {
+                        showQrisSection({
+                            qrImageUrl: data.qrImageUrl,
+                            qrString: data.qrString,
+                            paymentUrl: data.paymentUrl,
+                            status,
+                            message: data.message || "Pembayaran belum lunas."
+                        });
+                    }
+                } finally {
+                    qrisRefreshBtn.disabled = false;
+                }
+            });
+            loadOrders();
+            setInterval(loadOrders, 5000);
+        });
+    </script>
+}

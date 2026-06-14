@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Belum Tersedia";
+    var role = ViewBag.RoleName as string ?? "unknown";
+}
+
+<section class="container py-5 text-light">
+    <div class="card bg-dark border-secondary">
+        <div class="card-body">
+            <h1 class="h4 mb-2">Dashboard untuk role ini belum tersedia</h1>
+            <p class="text-white-50 mb-3">
+                Role aktif: <strong>@role</strong>. Hubungi admin untuk konfigurasi menu/halaman role.
+            </p>
+            <a class="btn btn-outline-light btn-sm" href="/Auth/Logout">Keluar</a>
+        </div>
+    </div>
+</section>

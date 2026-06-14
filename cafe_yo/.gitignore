@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────
+# .gitignore — Cafe Yo (ASP.NET Core 8.0)
+# ─────────────────────────────────────────────
+
+# === OS Files ===
+Thumbs.db
+*.DS_Store
+Desktop.ini
+ehthumbs.db
+
+# === IDE / Editor ===
+.vs/
+.vscode/
+.idea/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln.ide/
+_ReSharper.*/
+packages/
+*.nupkg
+
+# === ASP.NET Core ===
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.runtimeconfig.json
+*.deps.json
+*.staticwebassets.*
+*.csproj.user
+
+# === Build & Publish ===
+[Bb]uild/
+[Dd]eploy/
+[Dd]ebug/
+[Rr]elease/
+**/bin/**
+**/obj/**
+**/publish/
+_build_check/
+
+# === Node / Frontend (if any) ===
+node_modules/
+jspm_packages/
+bower_components/
+wwwroot/lib/*/
+wwwroot/vendor/
+
+# === Logs ===
+*.log
+*.err.log
+*.out.log
+logs/
+log/
+run_*.log
+verify_*.log
+
+# === Database / Migrations (generated) ===
+**/Migrations/
+*.db
+*.sqlite
+*.mdf
+*.ldf
+**/Data/Database/
+
+# === Secrets & Config ===
+*.secret.*
+appsettings.*.local.json
+appsettings.Production.json
+.env
+.env.*.local
+*.Development.json
+!appsettings.Development.json
+*_local.*
+user.config
+
+# === dotnet user-secrets ===
+secrets.json
+secrets.*.json
+
+# === Build Check Artifacts ===
+_build_check/
+
+# === Temp files ===
+*.tmp
+*.swp
+*.bak
+*~
+~$*
+*.idb
+*.pdb
+*.cache
+*.orig
+
+# === Windows shortcuts ===
+*.lnk
+
+# === Test Results ===
+TestResults/
+coverage/
+*.trx
+*.coverage

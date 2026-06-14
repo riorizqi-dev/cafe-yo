@@ -1,0 +1,52 @@
+@model List<(int Id, string Name, string Category, decimal Price, int Stock, bool IsAvailable, string Status, string? Notes, DateTime? At, string? By)>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Owner Menu Control";
+    var id = new System.Globalization.CultureInfo("id-ID");
+}
+<style>
+    .m-wrap{color:#e9edf6}.m-card{background:linear-gradient(160deg,#111729,#0b1020);border:1px solid #27344f;border-radius:14px;padding:1rem}
+    .m-chip{padding:.35rem .65rem;border-radius:999px;background:#13213b;border:1px solid #2b3f64;color:#9ec5ff;text-decoration:none}
+</style>
+<section class="m-wrap">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-1">Owner Menu Control</h1>
+            <div class="text-white-50">Approve/reject perubahan menu dari sisi bisnis.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="m-chip" href="/Owner">Dashboard</a>
+            <a class="m-chip" href="/Admin/Menu">Edit Menu Admin</a>
+        </div>
+    </div>
+    <div class="m-card">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm mb-0">
+                <thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Stock</th><th>Status</th><th>Approval</th><th>Aksi</th></tr></thead>
+                <tbody>
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td>@m.Name</td>
+                        <td>@m.Category</td>
+                        <td>@m.Price.ToString("C0", id)</td>
+                        <td>@m.Stock</td>
+                        <td>@(m.IsAvailable ? "Aktif" : "Nonaktif")</td>
+                        <td>@m.Status</td>
+                        <td class="d-flex gap-1">
+                            <form method="post" action="/Owner/MenuControl/@m.Id/Approve">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-success btn-sm" type="submit">Approve</button>
+                            </form>
+                            <form method="post" action="/Owner/MenuControl/@m.Id/Reject">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-outline-danger btn-sm" type="submit">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

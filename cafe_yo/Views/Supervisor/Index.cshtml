@@ -1,0 +1,52 @@
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Supervisor Dashboard";
+}
+<style>
+.sv{background:#0d1118;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:1rem}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}.card{background:#131a24;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:.8rem}
+.k{font-size:.8rem;color:#fff}.v{font-size:1.4rem;font-weight:700;color:#fff}.mods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-top:1rem}
+.mod a{display:inline-block;margin-top:.45rem;color:#ffd85a;text-decoration:none}.badge{padding:.1rem .5rem;border-radius:999px;font-size:.72rem}.ok{background:#1f5137}.low{background:#6a4c1f}.out{background:#5d2730}
+.sv h1,.sv h2,.sv h3,.sv p,.sv div,.sv span,.sv strong{color:#fff !important}
+@@media(max-width:980px){.grid,.mods{grid-template-columns:1fr 1fr}}@@media(max-width:640px){.grid,.mods{grid-template-columns:1fr}}
+</style>
+<section class="sv">
+    <h1 style="margin:0 0 .35rem">Supervisor Dashboard</h1>
+    <p style="margin:0 0 1rem;color:#fff">Manajemen bahan, resep, inventaris, log pemakaian, dan status jual menu.</p>
+
+    <div class="grid">
+        <div class="card"><div class="k">Total Bahan</div><div class="v" id="totalIngredients">0</div></div>
+        <div class="card"><div class="k">Stok Menipis</div><div class="v" id="lowStock">0</div></div>
+        <div class="card"><div class="k">Stok Habis</div><div class="v" id="outStock">0</div></div>
+        <div class="card"><div class="k">Menu Tidak Bisa Dijual</div><div class="v" id="notSellable">0</div></div>
+        <div class="card"><div class="k">Barang Rusak/Hilang (Hari Ini)</div><div class="v" id="damagedCount">0</div></div>
+        <div class="card"><div class="k">Bahan Expired (Hari Ini)</div><div class="v" id="expiredCount">0</div></div>
+    </div>
+
+    <div class="mods">
+        <div class="card mod"><h3 style="margin:0">Bahan & Bumbu</h3><div class="k">Tambah/edit stok bahan.</div><a href="/Supervisor/Ingredients">Buka</a></div>
+        <div class="card mod"><h3 style="margin:0">Resep / Komposisi</h3><div class="k">Atur pemakaian bahan per menu.</div><a href="/Supervisor/Recipes">Buka</a></div>
+        <div class="card mod"><h3 style="margin:0">Inventaris & Expired</h3><div class="k">Alat, barang rusak/hilang, bahan basi.</div><a href="/Supervisor/Inventory">Buka</a></div>
+        <div class="card mod"><h3 style="margin:0">Log Pemakaian</h3><div class="k">Jejak bahan saat koki proses order.</div><a href="/Supervisor/UsageLogs">Buka</a></div>
+        <div class="card mod"><h3 style="margin:0">Order Monitor</h3><div class="k">Pantau order aktif.</div><a href="/Supervisor/Orders">Buka</a></div>
+        <div class="card mod"><h3 style="margin:0">Alert Operasional</h3><div class="k">Stok menipis, antrean order.</div><a href="/Supervisor/Alerts">Buka</a></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.7rem">
+            <h3 style="margin:0">Log Pemakaian Terbaru</h3>
+            <span class="badge ok">Live</span>
+        </div>
+        <div id="recentUsage" class="k" style="margin-top:.5rem">Memuat...</div>
+    </div>
+</section>
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const by=(id)=>document.getElementById(id);
+ const renderRecent=(rows)=>{ if(!rows.length){by('recentUsage').textContent='Belum ada log.';return;} by('recentUsage').innerHTML=rows.map(x=>`<div style="padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.08)">${x.orderNumber} - ${x.menuName} - ${x.ingredient}: ${x.qtyUsed} (sisa ${x.remainingStock})</div>`).join(''); };
+ const run=async()=>{const r=await fetch('/api/supervisor/dashboard-summary',{cache:'no-store'});if(!r.ok)return;const d=await r.json();const s=d?.summary||{};by('totalIngredients').textContent=s.totalIngredients??0;by('lowStock').textContent=s.lowStockCount??0;by('outStock').textContent=s.outStockCount??0;by('notSellable').textContent=s.notSellableCount??0;by('damagedCount').textContent=s.damagedItemsCount??0;by('expiredCount').textContent=s.expiredLogsCount??0;renderRecent(Array.isArray(s.recentUsage)?s.recentUsage:[]);};
+ run(); setInterval(run,7000);
+});
+</script>
+}
